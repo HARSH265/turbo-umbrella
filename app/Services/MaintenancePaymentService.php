@@ -6,6 +6,7 @@ use App\Enums\NotificationType;
 use App\Models\Maintenance;
 use App\Models\MaintenancePayment;
 use App\Models\MaintenancePolicy;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -39,6 +40,7 @@ class MaintenancePaymentService
             $maintenance, $amount, $performedBy,
             $paymentMode, $transactionId, $remarks
         ) {
+            $oldStatus = $maintenance->status;
 
             // ✅ Validate amount > 0
             if ($amount <= 0) {
@@ -107,9 +109,12 @@ class MaintenancePaymentService
                 performedBy: $performedBy
             );
 
-            $this->notifyPaymentRecorded($maintenance->fresh('flat.residents'), $amount);
+            $maintenance = $maintenance->fresh('flat.residents');
 
-            return $maintenance->fresh();
+            $this->notifyPaymentRecorded($maintenance, $amount, $performedBy);
+            $this->notifyStatusChange($maintenance, $oldStatus);
+
+            return $maintenance;
         });
     }
 
@@ -137,14 +142,59 @@ class MaintenancePaymentService
         }
     }
 
-    private function notifyPaymentRecorded(Maintenance $maintenance, float $amount): void
+    private function notifyPaymentRecorded(Maintenance $maintenance, float $amount, int $performedBy): void
     {
+        $performedByUser = User::find($performedBy);
+
         foreach ($maintenance->flat?->activeResidents ?? collect() as $resident) {
+            $message = 'A payment of Rs. ' . number_format($amount, 2) . ' has been recorded.';
+
+            if ($performedByUser && $performedByUser->id !== $resident->id) {
+                $message = 'Your maintenance has been paid by ' . $performedByUser->name
+                    . ' (Rs. ' . number_format($amount, 2) . ').';
+            }
+
             $this->notificationService->sendToUser(
                 $resident,
                 NotificationType::PAYMENT_RECEIVED,
                 'Maintenance payment recorded',
-                'A payment of Rs. ' . number_format($amount, 2) . ' has been recorded.',
+                $message,
+                'maintenance',
+                $maintenance->id,
+                route('maintenance.show', $maintenance)
+            );
+        }
+
+        $societyId = $maintenance->flat?->tower?->society_id;
+
+        if ($societyId) {
+            $flatLabel = $maintenance->flat->flat_number ?? 'N/A';
+
+            $this->notificationService->sendToRole(
+                'society-admin',
+                NotificationType::PAYMENT_RECEIVED,
+                'Maintenance payment received',
+                'Payment of Rs. ' . number_format($amount, 2) . " received for flat {$flatLabel}.",
+                'maintenance',
+                $maintenance->id,
+                route('maintenance.show', $maintenance),
+                $societyId
+            );
+        }
+    }
+
+    private function notifyStatusChange(Maintenance $maintenance, $oldStatus): void
+    {
+        if ($oldStatus === $maintenance->status) {
+            return;
+        }
+
+        foreach ($maintenance->flat?->activeResidents ?? collect() as $resident) {
+            $this->notificationService->sendToUser(
+                $resident,
+                NotificationType::MAINTENANCE_UPDATED,
+                'Maintenance status updated',
+                'Maintenance status is now ' . ucfirst(str_replace('_', ' ', $maintenance->status->value)) . '.',
                 'maintenance',
                 $maintenance->id,
                 route('maintenance.show', $maintenance)

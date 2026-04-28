@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\NotificationType;
 use App\Models\Maintenance;
 use App\Models\MaintenancePolicy;
 use App\Enums\MaintenanceStatus;
@@ -11,10 +12,15 @@ use Carbon\Carbon;
 class MaintenanceLateFeeService
 {
     protected ActivityLogService $activityLogService;
+    protected NotificationService $notificationService;
 
-    public function __construct(ActivityLogService $activityLogService)
+    public function __construct(
+        ActivityLogService $activityLogService,
+        NotificationService $notificationService
+    )
     {
         $this->activityLogService = $activityLogService;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -33,6 +39,7 @@ class MaintenanceLateFeeService
                 ->get();
 
             foreach ($records as $maintenance) {
+                $oldStatus = $maintenance->status;
 
                 $flat = $maintenance->flat;
 
@@ -89,6 +96,8 @@ class MaintenanceLateFeeService
                     performedBy: null // system action
                 );
 
+                $this->notifyOverdueOrLateFeeUpdate($maintenance->fresh('flat.residents'), $oldStatus, true);
+
                 $updatedCount++;
             }
         });
@@ -105,6 +114,7 @@ class MaintenanceLateFeeService
             return; // Already overdue
         }
 
+        $oldStatus = $maintenance->status;
         $oldData = $maintenance->toArray();
 
         $maintenance->recalculateStatus();
@@ -118,6 +128,37 @@ class MaintenanceLateFeeService
                 newData: $maintenance->fresh()->toArray(),
                 performedBy: null
             );
+
+            $this->notifyOverdueOrLateFeeUpdate($maintenance->fresh('flat.residents'), $oldStatus, false);
+        }
+    }
+
+    private function notifyOverdueOrLateFeeUpdate(Maintenance $maintenance, $oldStatus, bool $lateFeeChanged): void
+    {
+        foreach ($maintenance->flat?->activeResidents ?? collect() as $resident) {
+            if ($oldStatus !== $maintenance->status && $maintenance->status === MaintenanceStatus::OVERDUE) {
+                $this->notificationService->sendToUser(
+                    $resident,
+                    NotificationType::MAINTENANCE_OVERDUE,
+                    'Maintenance is overdue',
+                    "Your maintenance bill for {$maintenance->month} is now overdue.",
+                    'maintenance',
+                    $maintenance->id,
+                    route('maintenance.show', $maintenance)
+                );
+            }
+
+            if ($lateFeeChanged && (float) $maintenance->late_fee > 0) {
+                $this->notificationService->sendToUser(
+                    $resident,
+                    NotificationType::MAINTENANCE_UPDATED,
+                    'Late fee applied',
+                    'A late fee of Rs. ' . number_format((float) $maintenance->late_fee, 2) . ' has been applied to your maintenance bill.',
+                    'maintenance',
+                    $maintenance->id,
+                    route('maintenance.show', $maintenance)
+                );
+            }
         }
     }
 }

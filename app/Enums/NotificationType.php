@@ -16,6 +16,7 @@ enum NotificationType: string
     // Maintenance Module
     case MAINTENANCE_DUE      = 'maintenance_due';
     case MAINTENANCE_OVERDUE  = 'maintenance_overdue';
+    case MAINTENANCE_UPDATED  = 'maintenance_updated';
     case PAYMENT_RECEIVED     = 'payment_received';
 
     // Complaint Module
@@ -34,6 +35,7 @@ enum NotificationType: string
             self::NOTICE_PUBLISHED  => 'Notice Published',
             self::MAINTENANCE_DUE   => 'Maintenance Due',
             self::MAINTENANCE_OVERDUE => 'Maintenance Overdue',
+            self::MAINTENANCE_UPDATED => 'Maintenance Updated',
             self::PAYMENT_RECEIVED  => 'Payment Received',
             self::COMPLAINT_RAISED  => 'Complaint Raised',
             self::COMPLAINT_UPDATED => 'Complaint Updated',
@@ -50,6 +52,7 @@ enum NotificationType: string
             self::NOTICE_PUBLISHED    => 'megaphone',
             self::MAINTENANCE_DUE     => 'clock',
             self::MAINTENANCE_OVERDUE => 'exclamation-triangle',
+            self::MAINTENANCE_UPDATED => 'arrow-path',
             self::PAYMENT_RECEIVED    => 'check-circle',
             self::COMPLAINT_RAISED    => 'chat-bubble-left',
             self::COMPLAINT_UPDATED   => 'arrow-path',
@@ -66,6 +69,7 @@ enum NotificationType: string
             self::NOTICE_PUBLISHED    => 'blue',
             self::MAINTENANCE_DUE     => 'yellow',
             self::MAINTENANCE_OVERDUE => 'red',
+            self::MAINTENANCE_UPDATED => 'blue',
             self::PAYMENT_RECEIVED    => 'green',
             self::COMPLAINT_RAISED    => 'orange',
             self::COMPLAINT_UPDATED   => 'purple',
