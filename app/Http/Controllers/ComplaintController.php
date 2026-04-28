@@ -38,6 +38,7 @@ class ComplaintController extends Controller
      */
     public function index(Request $request)
     {
+        $user = Auth::user();
         $query = Complaint::with(['user', 'flat', 'assignedStaff']);
 
         // Filter by status
@@ -65,16 +66,22 @@ class ComplaintController extends Controller
         }
 
         // For residents, show only their complaints
-        if (Auth::user()->isResident()) {
-            $query->where('user_id', Auth::id());
+        if ($user->isResident()) {
+            $query->where('user_id', $user->id);
         }
 
         // For staff, show assigned complaints
-        if (Auth::user()->isStaff()) {
-            $query->where('assigned_to', Auth::id());
+        if ($user->isStaff()) {
+            $query->where('assigned_to', $user->id);
         }
 
-        $complaints = $query->latest()->paginate(20);
+        if ($user->isSocietyAdmin() && $user->society_id) {
+            $query->whereHas('flat.tower', function ($q) use ($user) {
+                $q->where('society_id', $user->society_id);
+            });
+        }
+
+        $complaints = $query->latest()->paginate(20)->withQueryString();
 
         return view('complaints.index', compact('complaints'));
     }
@@ -85,7 +92,7 @@ class ComplaintController extends Controller
     public function create()
     {
         $user = Auth::user();
-        $flats = $user->activeFlats;
+        $flats = $user->activeFlats()->with('tower')->get();
 
         // If user has only one flat, pre-select it
         $selectedFlat = $flats->count() === 1 ? $flats->first() : null;
@@ -296,7 +303,38 @@ class ComplaintController extends Controller
         }
     }
 
-    
+    /**
+     * Resident dispute flow for unresolved fixes.
+     */
+    public function dispute(Request $request, Complaint $complaint)
+    {
+        if (!$this->canDisputeComplaint($complaint)) {
+            abort(403);
+        }
+
+        $request->validate([
+            'reason' => 'required|string|max:2000',
+            'files' => 'nullable|array',
+            'files.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
+        ]);
+
+        try {
+            $files = $request->hasFile('files') ? $request->file('files') : null;
+
+            $this->complaintService->dispute(
+                $complaint->id,
+                $request->reason,
+                $files
+            );
+
+            return back()->with('success', 'Complaint disputed successfully. The team has been notified.');
+        } catch (\Exception $e) {
+            return back()->withInput()->withErrors([
+                'error' => 'Failed to dispute complaint: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
 
     /**
      * Check if user can view specific complaint
@@ -305,9 +343,14 @@ class ComplaintController extends Controller
     {
         $user = Auth::user();
 
-        // Admins can view all
-        if ($user->isSuperAdmin() || $user->isSocietyAdmin()) {
+        if ($user->isSuperAdmin()) {
             return true;
+        }
+
+        if ($user->isSocietyAdmin()) {
+            return $complaint->flat
+                && $complaint->flat->tower
+                && $complaint->flat->tower->society_id === $user->society_id;
         }
 
         // Residents can view their own
@@ -330,8 +373,14 @@ class ComplaintController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->isSuperAdmin() || $user->isSocietyAdmin()) {
+        if ($user->isSuperAdmin()) {
             return true;
+        }
+
+        if ($user->isSocietyAdmin()) {
+            return $complaint->flat
+                && $complaint->flat->tower
+                && $complaint->flat->tower->society_id === $user->society_id;
         }
 
         if ($user->isStaff()) {
@@ -339,5 +388,14 @@ class ComplaintController extends Controller
         }
 
         return false;
+    }
+
+    private function canDisputeComplaint(Complaint $complaint): bool
+    {
+        $user = Auth::user();
+
+        return $user->isResident()
+            && $complaint->user_id === $user->id
+            && in_array($complaint->status->value, ['resolved', 'closed'], true);
     }
 }

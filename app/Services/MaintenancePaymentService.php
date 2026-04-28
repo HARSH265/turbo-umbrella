@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\NotificationType;
 use App\Models\Maintenance;
 use App\Models\MaintenancePayment;
 use App\Models\MaintenancePolicy;
@@ -11,10 +12,15 @@ use Illuminate\Validation\ValidationException;
 class MaintenancePaymentService
 {
     protected ActivityLogService $activityLogService;
+    protected NotificationService $notificationService;
 
-    public function __construct(ActivityLogService $activityLogService)
+    public function __construct(
+        ActivityLogService $activityLogService,
+        NotificationService $notificationService
+    )
     {
         $this->activityLogService = $activityLogService;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -101,6 +107,8 @@ class MaintenancePaymentService
                 performedBy: $performedBy
             );
 
+            $this->notifyPaymentRecorded($maintenance->fresh('flat.residents'), $amount);
+
             return $maintenance->fresh();
         });
     }
@@ -126,6 +134,21 @@ class MaintenancePaymentService
             throw ValidationException::withMessages([
                 'amount' => 'Partial payment is not allowed as per society policy. Please pay full amount.',
             ]);
+        }
+    }
+
+    private function notifyPaymentRecorded(Maintenance $maintenance, float $amount): void
+    {
+        foreach ($maintenance->flat?->activeResidents ?? collect() as $resident) {
+            $this->notificationService->sendToUser(
+                $resident,
+                NotificationType::PAYMENT_RECEIVED,
+                'Maintenance payment recorded',
+                'A payment of Rs. ' . number_format($amount, 2) . ' has been recorded.',
+                'maintenance',
+                $maintenance->id,
+                route('maintenance.show', $maintenance)
+            );
         }
     }
 }

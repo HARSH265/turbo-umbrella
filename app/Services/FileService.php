@@ -186,13 +186,14 @@ class FileService
     */
 
     /**
-     * Delete a single file (soft delete DB + hard delete from disk)
+     * Delete a single file
      * 
      * @param  int  $fileId
+     * @param  bool $removeFromDisk
      * @return bool
      * @throws FileException
      */
-    public function delete(int $fileId): bool
+    public function delete(int $fileId, bool $removeFromDisk = true): bool
     {
         $file = File::findOrFail($fileId);
 
@@ -200,7 +201,7 @@ class FileService
 
         try {
             // Remove from disk
-            if (Storage::disk($this->disk())->exists($file->path)) {
+            if ($removeFromDisk && Storage::disk($this->disk())->exists($file->path)) {
                 Storage::disk($this->disk())->delete($file->path);
             }
 

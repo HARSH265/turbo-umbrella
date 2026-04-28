@@ -40,7 +40,7 @@ class ActivityLogController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $logs = $query->latest()->paginate(50);
+        $logs = $query->latest()->paginate(50)->withQueryString();
 
         $modules = ActivityLog::distinct()->pluck('module');
         $actions = ActivityLog::distinct()->pluck('action');

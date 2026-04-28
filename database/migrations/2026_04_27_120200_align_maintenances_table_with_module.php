@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    private function supportsEnumModify(): bool
+    {
+        return in_array(DB::getDriverName(), ['mysql', 'mariadb'], true);
+    }
+
     public function up(): void
     {
         Schema::table('maintenances', function (Blueprint $table) {
@@ -15,14 +20,14 @@ return new class extends Migration
             }
         });
 
-        if (Schema::hasColumn('maintenances', 'status')) {
+        if ($this->supportsEnumModify() && Schema::hasColumn('maintenances', 'status')) {
             DB::statement("ALTER TABLE maintenances MODIFY status ENUM('unpaid','partially_paid','paid','overdue') NOT NULL DEFAULT 'unpaid'");
         }
     }
 
     public function down(): void
     {
-        if (Schema::hasColumn('maintenances', 'status')) {
+        if ($this->supportsEnumModify() && Schema::hasColumn('maintenances', 'status')) {
             DB::statement("ALTER TABLE maintenances MODIFY status ENUM('unpaid','paid','overdue') NOT NULL DEFAULT 'unpaid'");
         }
 

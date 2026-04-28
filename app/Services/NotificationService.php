@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Enums\NotificationType;
 use App\Models\User;
 use App\Notifications\GeneralNotification;
-use Illuminate\Support\Facades\DB;
 
 /**
  * app/Services/NotificationService.php
@@ -76,8 +75,9 @@ class NotificationService
     ): void {
         $residents = User::where('society_id', $societyId)
             ->whereHas('roles', function ($q) {
-                $q->where('name', 'resident');
+                $q->where('slug', 'resident');
             })
+            ->where('is_active', true)
             ->get();
 
         $this->sendToCollection($residents, $type, $title, $message, $module, $entityId, $url);
@@ -108,8 +108,10 @@ class NotificationService
         ?int             $societyId = null,
     ): void {
         $query = User::whereHas('roles', function ($q) use ($roleName) {
-            $q->where('name', $roleName);
+            $q->where('slug', $roleName);
         });
+
+        $query->where('is_active', true);
 
         if ($societyId) {
             $query->where('society_id', $societyId);
@@ -262,7 +264,7 @@ class NotificationService
             $type, $title, $message, $module, $entityId, $url
         );
 
-        foreach ($users as $user) {
+        foreach ($users->unique('id') as $user) {
             $user->notify($notification);
         }
     }

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\ComplaintStatus;
+use App\Enums\NotificationType;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Complaint;
@@ -23,11 +25,17 @@ class ComplaintService
 {
     protected ActivityLogService $activityLog;
     protected FileService $fileService;
+    protected NotificationService $notificationService;
 
-    public function __construct(ActivityLogService $activityLog, FileService $fileService)
+    public function __construct(
+        ActivityLogService $activityLog,
+        FileService $fileService,
+        NotificationService $notificationService
+    )
     {
         $this->activityLog = $activityLog;
         $this->fileService = $fileService;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -57,6 +65,7 @@ class ComplaintService
             }
 
             $this->activityLog->logCreate('complaint', $complaint->id, $complaint->toArray());
+            $this->notifyComplaintRaised($complaint);
 
             DB::commit();
             return $complaint->fresh();
@@ -104,6 +113,8 @@ class ComplaintService
                     "Complaint assigned to " . User::find($staffId)->name . " and status changed to In Progress.",
                     true
                 );
+
+                $this->notifyComplaintAssigned($complaint->fresh());
             }
 
             DB::commit();
@@ -149,6 +160,12 @@ class ComplaintService
                     $complaint->id,
                     "Complaint marked as resolved.",
                     false  // Public comment
+                );
+
+                $this->notifyComplaintUpdated(
+                    $complaint->fresh(),
+                    'Complaint resolved',
+                    'Your complaint has been marked as resolved.'
                 );
             }
 
@@ -196,15 +213,61 @@ class ComplaintService
         ]);
 
         if ($result) {
+            $complaint = $complaint->fresh();
             $this->activityLog->logUpdate(
                 'complaint',
                 $complaint->id,
                 $oldData,
-                $complaint->fresh()->toArray()
+                $complaint->toArray()
+            );
+
+            $this->notifyComplaintUpdated(
+                $complaint,
+                'Complaint status updated',
+                'Your complaint status is now ' . ucfirst(str_replace('_', ' ', (string) $status)) . '.'
             );
         }
 
         return $result;
+    }
+
+    /**
+     * Reopen a resolved/closed complaint under dispute.
+     */
+    public function dispute(int $complaintId, string $reason, ?array $files = null): bool
+    {
+        $complaint = Complaint::findOrFail($complaintId);
+        $oldData = $complaint->toArray();
+
+        return DB::transaction(function () use ($complaint, $oldData, $reason, $files) {
+            $result = $complaint->update([
+                'status' => ComplaintStatus::DISPUTED,
+                'updated_by' => Auth::id(),
+            ]);
+
+            if ($files && is_array($files)) {
+                $this->fileService->uploadMultiple($files, 'complaints', $complaint->id);
+            }
+
+            $this->addComment(
+                $complaint->id,
+                'Resident disputed the resolution: ' . $reason,
+                false
+            );
+
+            $complaint = $complaint->fresh();
+
+            $this->activityLog->logUpdate(
+                'complaint',
+                $complaint->id,
+                $oldData,
+                $complaint->toArray()
+            );
+
+            $this->notifyComplaintDisputed($complaint, $reason);
+
+            return $result;
+        });
     }
 
     /**
@@ -238,5 +301,99 @@ class ComplaintService
                 ->whereNotIn('status', ['resolved', 'closed'])
                 ->count(),
         ];
+    }
+
+    private function notifyComplaintRaised(Complaint $complaint): void
+    {
+        $complaint->loadMissing('flat.tower');
+
+        if ($complaint->flat?->tower?->society_id) {
+            $this->notificationService->sendToRole(
+                'society-admin',
+                NotificationType::COMPLAINT_RAISED,
+                'New complaint raised',
+                "A new complaint has been submitted: {$complaint->subject}",
+                'complaints',
+                $complaint->id,
+                route('complaints.show', $complaint),
+                $complaint->flat->tower->society_id
+            );
+        }
+    }
+
+    private function notifyComplaintAssigned(Complaint $complaint): void
+    {
+        $complaint->loadMissing('assignedStaff');
+
+        if ($complaint->assignedStaff) {
+            $this->notificationService->sendToUser(
+                $complaint->assignedStaff,
+                NotificationType::COMPLAINT_UPDATED,
+                'Complaint assigned',
+                "You have been assigned complaint {$complaint->ticket_number}.",
+                'complaints',
+                $complaint->id,
+                route('complaints.show', $complaint)
+            );
+        }
+    }
+
+    private function notifyComplaintUpdated(Complaint $complaint, string $title, string $message): void
+    {
+        $complaint->loadMissing('user');
+
+        if ($complaint->user) {
+            $this->notificationService->sendToUser(
+                $complaint->user,
+                NotificationType::COMPLAINT_UPDATED,
+                $title,
+                $message,
+                'complaints',
+                $complaint->id,
+                route('complaints.show', $complaint)
+            );
+        }
+    }
+
+    private function notifyComplaintDisputed(Complaint $complaint, string $reason): void
+    {
+        $complaint->loadMissing(['assignedStaff', 'flat.tower', 'user']);
+
+        if ($complaint->assignedStaff) {
+            $this->notificationService->sendToUser(
+                $complaint->assignedStaff,
+                NotificationType::COMPLAINT_UPDATED,
+                'Complaint disputed by resident',
+                "Complaint {$complaint->ticket_number} has been disputed: {$reason}",
+                'complaints',
+                $complaint->id,
+                route('complaints.show', $complaint)
+            );
+        }
+
+        if ($complaint->flat?->tower?->society_id) {
+            $this->notificationService->sendToRole(
+                'society-admin',
+                NotificationType::COMPLAINT_UPDATED,
+                'Complaint reopened under dispute',
+                "Complaint {$complaint->ticket_number} has been disputed by the resident.",
+                'complaints',
+                $complaint->id,
+                route('complaints.show', $complaint),
+                $complaint->flat->tower->society_id
+            );
+        }
+
+        if ($complaint->user) {
+            $this->notificationService->sendToUser(
+                $complaint->user,
+                NotificationType::COMPLAINT_UPDATED,
+                'Complaint reopened',
+                'Your complaint has been reopened and marked as disputed.',
+                'complaints',
+                $complaint->id,
+                route('complaints.show', $complaint)
+            );
+        }
     }
 }

@@ -58,7 +58,7 @@ class FlatController extends Controller
             $query->where('flat_number', 'LIKE', '%' . $request->search . '%');
         }
 
-        $flats = $query->paginate(50);
+        $flats = $query->paginate(50)->withQueryString();
         $towers = Tower::with('society')->active()->get();
 
         // Load primary residents separately

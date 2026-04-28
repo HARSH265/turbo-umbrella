@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ComplaintStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -39,7 +40,7 @@ class Complaint extends Model
         return [
             'assigned_at' => 'datetime',
             'resolved_at' => 'datetime',
-            'status' => \App\Enums\ComplaintStatus::class,
+            'status' => ComplaintStatus::class,
         'priority' => \App\Enums\ComplaintPriority::class,
         ];
     }
@@ -169,12 +170,12 @@ class Complaint extends Model
      */
     public function close(): bool
     {
-        if ($this->status !== 'resolved') {
+        if ($this->status !== ComplaintStatus::RESOLVED) {
             return false; // Can only close resolved complaints
         }
 
         return $this->update([
-            'status' => 'closed',
+            'status' => ComplaintStatus::CLOSED,
         ]);
     }
 
@@ -185,7 +186,7 @@ class Complaint extends Model
      */
     public function isOpen(): bool
     {
-        return $this->status === 'open';
+        return $this->status === ComplaintStatus::OPEN;
     }
 
     /**
@@ -195,7 +196,7 @@ class Complaint extends Model
      */
     public function isInProgress(): bool
     {
-        return $this->status === 'in_progress';
+        return $this->status === ComplaintStatus::IN_PROGRESS;
     }
 
     /**
@@ -205,7 +206,7 @@ class Complaint extends Model
      */
     public function isResolved(): bool
     {
-        return in_array($this->status, ['resolved', 'closed']);
+        return in_array($this->status, [ComplaintStatus::RESOLVED, ComplaintStatus::CLOSED], true);
     }
 
     /**

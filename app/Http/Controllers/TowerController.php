@@ -40,7 +40,7 @@ class TowerController extends Controller
             $query->where('is_active', $request->boolean('is_active'));
         }
 
-        $towers = $query->latest()->paginate(20);
+        $towers = $query->latest()->paginate(20)->withQueryString();
         $societies = Society::active()->get();
 
         return view('towers.index', compact('towers', 'societies'));

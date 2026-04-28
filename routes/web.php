@@ -128,6 +128,7 @@ Route::middleware(['auth', 'verified', 'user.active'])->group(function () {
 
     Route::middleware(['auth'])->prefix('notifications')->name('notifications.')->group(function () {
     Route::get('/',                     [NotificationController::class, 'index'])->name('index');
+    Route::get('{id}/open',             [NotificationController::class, 'open'])->name('open');
     Route::post('{id}/read',            [NotificationController::class, 'markAsRead'])->name('read');
     Route::post('read-all',             [NotificationController::class, 'markAllAsRead'])->name('read-all');
     Route::delete('{id}',               [NotificationController::class, 'destroy'])->name('destroy');

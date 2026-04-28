@@ -102,7 +102,7 @@
                 <div class="bg-white rounded-lg shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">Conversation Thread</h3>
 
-                    <div class="space-y-4 mb-6">
+                    <div class="mb-6 max-h-[28rem] space-y-4 overflow-y-auto pr-2">
                         @forelse($complaint->comments as $comment)
                             @if (!$comment->is_internal || auth()->user()->isStaff() || auth()->user()->isSocietyAdmin())
                                 <div
@@ -262,6 +262,7 @@
                         </button>
                     </div>
                 @endif
+
             </div>
         </div>
     </div>
@@ -290,7 +291,7 @@
         class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
         <div class="relative mx-auto p-6 border w-full max-w-md shadow-2xl rounded-xl bg-white border-red-100">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-bold text-red-600 uppercase italic">Escalate Dispute</h3>
+                <h3 class="text-xl font-bold text-red-600">Reopen Complaint</h3>
                 <button onclick="document.getElementById('disputeModal').classList.add('hidden')"
                     class="text-gray-400 hover:text-red-500">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -298,21 +299,22 @@
                     </svg>
                 </button>
             </div>
+
             <form method="POST" action="{{ route('complaints.dispute', $complaint) }}" enctype="multipart/form-data">
                 @csrf
                 <div class="mb-4">
-                    <label class="block text-sm font-bold text-gray-700 mb-2 italic underline">Reason for
-                        Disputing:</label>
-                    <textarea name="reason" rows="4" required placeholder="Describe why you are reopening this ticket..."
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Reason for dispute</label>
+                    <textarea name="reason" rows="4" required placeholder="Explain what issue is still unresolved..."
                         class="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500"></textarea>
                 </div>
                 <div class="mb-6">
-                    <label class="block text-sm font-bold text-gray-700 mb-2">Upload Visual Proof (Photo/Video):</label>
-                    <input type="file" name="files[]" multiple accept="image/*" class="text-sm">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Upload fresh proof (optional)</label>
+                    <input type="file" name="files[]" multiple accept=".jpg,.jpeg,.png,.pdf,image/*,application/pdf" class="text-sm">
+                    <p class="mt-2 text-xs text-gray-500">Supported: JPG, PNG, PDF up to 10 MB each.</p>
                 </div>
                 <button type="submit"
                     class="w-full py-3 bg-red-600 text-white rounded-lg font-black uppercase tracking-widest hover:bg-red-700 shadow-xl transition">
-                    Confirm Escalation
+                    Submit Dispute
                 </button>
             </form>
         </div>

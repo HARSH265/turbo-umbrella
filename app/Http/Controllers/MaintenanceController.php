@@ -39,7 +39,7 @@ class MaintenanceController extends Controller
         $query = Maintenance::with(['flat.tower', 'creator']);
 
         if ($user->isResident()) {
-            $query->whereIn('flat_id', $user->activeFlats()->pluck('id'));
+            $query->whereIn('flat_id', $user->activeFlats()->pluck('flats.id'));
         } elseif ($user->hasRole('society-admin') && $user->society_id) {
             $query->forSociety($user->society_id);
         }
@@ -53,7 +53,7 @@ class MaintenanceController extends Controller
         }
 
         $summary = $this->maintenanceService->getSummaryFromQuery(clone $query);
-        $maintenances = $query->orderByDesc('month')->paginate(50);
+        $maintenances = $query->orderByDesc('month')->paginate(50)->withQueryString();
 
         return view('maintenance.index', compact('maintenances', 'summary'));
     }

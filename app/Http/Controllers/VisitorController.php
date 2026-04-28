@@ -49,7 +49,7 @@ class VisitorController extends Controller
             $query->today();
         }
 
-        $visitors = $query->latest('entry_time')->paginate(50);
+        $visitors = $query->latest('entry_time')->paginate(50)->withQueryString();
 
         return view('visitors.index', compact('visitors'));
     }

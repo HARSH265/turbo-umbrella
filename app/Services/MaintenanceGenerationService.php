@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\NotificationType;
 use App\Models\Flat;
 use App\Models\Maintenance;
 use App\Models\MaintenancePolicy;
@@ -13,10 +14,15 @@ use Illuminate\Support\Facades\DB;
 class MaintenanceGenerationService
 {
     protected ActivityLogService $activityLogService;
+    protected NotificationService $notificationService;
 
-    public function __construct(ActivityLogService $activityLogService)
+    public function __construct(
+        ActivityLogService $activityLogService,
+        NotificationService $notificationService
+    )
     {
         $this->activityLogService = $activityLogService;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -89,6 +95,8 @@ class MaintenanceGenerationService
                     data: $maintenance->toArray(),
                     performedBy: $generatedBy
                 );
+
+                $this->notifyMaintenanceDue($maintenance->fresh('flat.residents'));
             }
 
             // ✅ Log generation summary
@@ -138,5 +146,22 @@ class MaintenanceGenerationService
             BillingCycle::YEARLY      => $month->month === 4, // April (financial year)
             default                   => true,
         };
+    }
+
+    private function notifyMaintenanceDue(Maintenance $maintenance): void
+    {
+        $maintenance->loadMissing('flat.residents');
+
+        foreach ($maintenance->flat?->activeResidents ?? collect() as $resident) {
+            $this->notificationService->sendToUser(
+                $resident,
+                NotificationType::MAINTENANCE_DUE,
+                'Maintenance generated',
+                "Maintenance for {$maintenance->month} has been generated for your flat.",
+                'maintenance',
+                $maintenance->id,
+                route('maintenance.show', $maintenance)
+            );
+        }
     }
 }

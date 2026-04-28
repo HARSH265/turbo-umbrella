@@ -93,6 +93,22 @@
             </a>
         @endif
 
+        <a href="{{ route('notifications.index') }}"
+           class="group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md {{ request()->routeIs('notifications.*') ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+            <span class="flex items-center">
+                <svg class="mr-3 h-6 w-6 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0018 9.75v-.7V9a6 6 0 10-12 0v.05-.05.7a8.967 8.967 0 00-2.312 6.022 23.848 23.848 0 005.454 1.31m5.715 0a24.255 24.255 0 01-5.715 0m5.715 0a3 3 0 11-5.715 0" />
+                </svg>
+                Notifications
+            </span>
+
+            @if(($notificationMenu['unreadCount'] ?? 0) > 0)
+                <span class="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-emerald-500 px-2 py-0.5 text-xs font-bold text-white">
+                    {{ $notificationMenu['unreadCount'] }}
+                </span>
+            @endif
+        </a>
+
         <!-- Visitors -->
         @if(Auth::user()->hasPermission('visitors.view') || Auth::user()->isResident())
             <a href="{{ route('visitors.index') }}"

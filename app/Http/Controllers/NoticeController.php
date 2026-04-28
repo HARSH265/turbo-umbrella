@@ -10,6 +10,7 @@ use App\Models\Society;
 use App\Models\User;
 use App\Services\FileService;
 use App\Services\ActivityLogService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -23,11 +24,17 @@ class NoticeController extends Controller
 {
     protected FileService $fileService;
     protected ActivityLogService $activityLog;
+    protected NotificationService $notificationService;
 
-    public function __construct(FileService $fileService, ActivityLogService $activityLog)
+    public function __construct(
+        FileService $fileService,
+        ActivityLogService $activityLog,
+        NotificationService $notificationService
+    )
     {
         $this->fileService = $fileService;
         $this->activityLog = $activityLog;
+        $this->notificationService = $notificationService;
         
         $this->middleware('permission:notices.view')->only(['index', 'show']);
         $this->middleware('permission:notices.create')->only(['create', 'store']);
@@ -48,6 +55,10 @@ class NoticeController extends Controller
             $query->forUser($user->id);
         }
 
+        if ($user->isSocietyAdmin() && $user->society_id) {
+            $query->where('society_id', $user->society_id);
+        }
+
         // Filter by society (for admins)
         if ($request->filled('society_id')) {
             $query->where('society_id', $request->society_id);
@@ -63,7 +74,7 @@ class NoticeController extends Controller
             $query->active();
         }
 
-        $notices = $query->latest('publish_date')->paginate(20);
+        $notices = $query->latest('publish_date')->paginate(20)->withQueryString();
         $societies = Society::active()->get();
 
         return view('notices.index', compact('notices', 'societies'));
@@ -74,8 +85,16 @@ class NoticeController extends Controller
      */
     public function create()
     {
-        $societies = Society::active()->get();
-        $residents = User::withRole('resident')->active()->get();
+        $user = Auth::user();
+        $societies = $user->isSuperAdmin()
+            ? Society::active()->get()
+            : Society::active()->where('id', $user->society_id)->get();
+        $residents = User::withRole('resident')
+            ->active()
+            ->when($user->isSocietyAdmin(), function ($query) use ($user) {
+                $query->where('society_id', $user->society_id);
+            })
+            ->get();
 
         return view('notices.create', compact('societies', 'residents'));
     }
@@ -87,8 +106,15 @@ class NoticeController extends Controller
     {
         DB::beginTransaction();
         try {
+            $user = Auth::user();
             $data = $request->validated();
             $data['created_by'] = Auth::id();
+
+            if ($user->isSocietyAdmin()) {
+                $data['society_id'] = $user->society_id;
+            }
+
+            $this->assertRecipientsBelongToSociety($request->input('recipients', []), (int) $data['society_id']);
 
             $notice = Notice::create($data);
 
@@ -107,6 +133,7 @@ class NoticeController extends Controller
             }
 
             $this->activityLog->logCreate('notice', $notice->id, $notice->toArray());
+            $this->notifyNoticeRecipients($notice, $request->input('recipients', []));
 
             DB::commit();
 
@@ -147,8 +174,16 @@ class NoticeController extends Controller
     public function edit(Notice $notice)
     {
         $notice->load('recipients');
-        $societies = Society::active()->get();
-        $residents = User::withRole('resident')->active()->get();
+        $user = Auth::user();
+        $societies = $user->isSuperAdmin()
+            ? Society::active()->get()
+            : Society::active()->where('id', $user->society_id)->get();
+        $residents = User::withRole('resident')
+            ->active()
+            ->when($user->isSocietyAdmin(), function ($query) use ($user) {
+                $query->where('society_id', $user->society_id);
+            })
+            ->get();
 
         return view('notices.edit', compact('notice', 'societies', 'residents'));
     }
@@ -160,9 +195,16 @@ class NoticeController extends Controller
     {
         DB::beginTransaction();
         try {
+            $user = Auth::user();
             $oldData = $notice->toArray();
             $data = $request->validated();
             $data['updated_by'] = Auth::id();
+
+            if ($user->isSocietyAdmin()) {
+                $data['society_id'] = $user->society_id;
+            }
+
+            $this->assertRecipientsBelongToSociety($request->input('recipients', []), (int) $data['society_id']);
 
             $notice->update($data);
 
@@ -183,6 +225,7 @@ class NoticeController extends Controller
             }
 
             $this->activityLog->logUpdate('notice', $notice->id, $oldData, $notice->fresh()->toArray());
+            $this->notifyNoticeRecipients($notice->fresh(), $request->input('recipients', []));
 
             DB::commit();
 
@@ -223,8 +266,12 @@ class NoticeController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->isSuperAdmin() || $user->isSocietyAdmin()) {
+        if ($user->isSuperAdmin()) {
             return true;
+        }
+
+        if ($user->isSocietyAdmin()) {
+            return $notice->society_id === $user->society_id;
         }
 
         if (!$user->isResident()) {
@@ -236,5 +283,65 @@ class NoticeController extends Controller
         }
 
         return $notice->recipients()->where('user_id', $user->id)->exists();
+    }
+
+    private function assertRecipientsBelongToSociety(array $recipientIds, int $societyId): void
+    {
+        if (empty($recipientIds)) {
+            return;
+        }
+
+        $count = User::withRole('resident')
+            ->active()
+            ->where('society_id', $societyId)
+            ->whereIn('id', $recipientIds)
+            ->count();
+
+        if ($count !== count($recipientIds)) {
+            throw new \InvalidArgumentException('Selected recipients must belong to the selected society.');
+        }
+    }
+
+    private function notifyNoticeRecipients(Notice $notice, array $recipientIds): void
+    {
+        $title = 'New notice published';
+        $message = $notice->title;
+        $url = route('notices.show', $notice);
+
+        if ($notice->visibility === 'all') {
+            $this->notificationService->sendToSociety(
+                (int) $notice->society_id,
+                \App\Enums\NotificationType::NOTICE_PUBLISHED,
+                $title,
+                $message,
+                'notices',
+                $notice->id,
+                $url
+            );
+
+            return;
+        }
+
+        if (empty($recipientIds)) {
+            return;
+        }
+
+        $users = User::withRole('resident')
+            ->active()
+            ->where('society_id', $notice->society_id)
+            ->whereIn('id', $recipientIds)
+            ->get();
+
+        foreach ($users as $user) {
+            $this->notificationService->sendToUser(
+                $user,
+                \App\Enums\NotificationType::NOTICE_PUBLISHED,
+                $title,
+                $message,
+                'notices',
+                $notice->id,
+                $url
+            );
+        }
     }
 }

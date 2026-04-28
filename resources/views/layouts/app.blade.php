@@ -72,7 +72,99 @@
                     </div>
                     
                     <!-- User menu -->
-                    <div class="ml-4 flex items-center md:ml-6">
+                    <div class="ml-4 flex items-center gap-3 md:ml-6">
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open"
+                                    type="button"
+                                    class="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition hover:border-gray-300 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">
+                                <span class="sr-only">Open notifications</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0018 9.75v-.7V9a6 6 0 10-12 0v.05-.05.7a8.967 8.967 0 00-2.312 6.022 23.848 23.848 0 005.454 1.31m5.715 0a24.255 24.255 0 01-5.715 0m5.715 0a3 3 0 11-5.715 0" />
+                                </svg>
+
+                                @if(($notificationMenu['unreadCount'] ?? 0) > 0)
+                                    <span class="absolute -right-1 -top-1 inline-flex min-w-[1.35rem] items-center justify-center rounded-full bg-emerald-500 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">
+                                        {{ $notificationMenu['unreadCount'] > 99 ? '99+' : $notificationMenu['unreadCount'] }}
+                                    </span>
+                                @endif
+                            </button>
+
+                            <div x-show="open"
+                                 x-cloak
+                                 @click.away="open = false"
+                                 class="absolute right-0 mt-3 w-[22rem] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
+                                <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                                    <div>
+                                        <p class="text-sm font-semibold text-gray-900">Notifications</p>
+                                        <p class="text-xs text-gray-500">
+                                            {{ $notificationMenu['unreadCount'] ?? 0 }} unread
+                                        </p>
+                                    </div>
+
+                                    @if(($notificationMenu['unreadCount'] ?? 0) > 0)
+                                        <form method="POST" action="{{ route('notifications.read-all') }}">
+                                            @csrf
+                                            <button type="submit" class="text-xs font-medium text-emerald-600 hover:text-emerald-700">
+                                                Mark all read
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
+
+                                <div class="max-h-96 overflow-y-auto">
+                                    @forelse(($notificationMenu['recent'] ?? collect()) as $notification)
+                                        @php($data = $notification->data)
+                                        <div class="border-b border-gray-100 last:border-b-0 {{ is_null($notification->read_at) ? 'bg-emerald-50/40' : 'bg-white' }}">
+                                            <div class="flex items-start gap-3 px-4 py-3">
+                                                <div class="mt-0.5 h-2.5 w-2.5 flex-shrink-0 rounded-full {{ is_null($notification->read_at) ? 'bg-emerald-500' : 'bg-gray-300' }}"></div>
+
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="truncate text-sm font-semibold text-gray-900">
+                                                        {{ $data['title'] ?? 'Notification' }}
+                                                    </p>
+                                                    <p class="mt-1 line-clamp-2 text-sm text-gray-600">
+                                                        {{ $data['message'] ?? '' }}
+                                                    </p>
+                                                    <p class="mt-1 text-xs text-gray-400">
+                                                        {{ $notification->created_at->diffForHumans() }}
+                                                    </p>
+                                                </div>
+
+                                                <div class="flex flex-col items-end gap-2">
+                                                    @if (!empty($data['url']))
+                                                        <a href="{{ route('notifications.open', $notification->id) }}"
+                                                           class="text-xs font-medium text-gray-700 hover:text-gray-900">
+                                                            Open
+                                                        </a>
+                                                    @endif
+
+                                                    @if (is_null($notification->read_at))
+                                                        <form method="POST" action="{{ route('notifications.read', $notification->id) }}">
+                                                            @csrf
+                                                            <button type="submit" class="text-xs font-medium text-emerald-600 hover:text-emerald-700">
+                                                                Read
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <div class="px-4 py-8 text-center text-sm text-gray-500">
+                                            No personal notifications yet.
+                                        </div>
+                                    @endforelse
+                                </div>
+
+                                <div class="border-t border-gray-100 bg-gray-50 px-4 py-3">
+                                    <a href="{{ route('notifications.index') }}"
+                                       class="block text-center text-sm font-medium text-gray-700 hover:text-gray-900">
+                                        View all notifications
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="relative" x-data="{ open: false }">
                             <button @click="open = !open" 
                                     type="button" 
