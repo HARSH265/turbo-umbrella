@@ -83,14 +83,48 @@
 
         <!-- Notices -->
         @if(Auth::user()->hasPermission('notices.view') || Auth::user()->isResident())
-            <a href="{{ route('notices.index') }}"
-               class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ request()->routeIs('notices.*') ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
-                <!-- Megaphone (outline) -->
-                <svg class="mr-3 h-6 w-6 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6.75H18a3 3 0 013 3v1.5a3 3 0 01-3 3h-7.5m0-9L3.75 9.75m6.75-3v12m0-3.75L3.75 14.25" />
-                </svg>
-                Notices
-            </a>
+            @php
+                $noticeActive = request()->routeIs('notices.*');
+            @endphp
+
+            <div x-data="{ open: {{ $noticeActive ? 'true' : 'false' }} }" class="space-y-1">
+                <button type="button"
+                        @click="open = !open"
+                        class="w-full group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md
+                        {{ $noticeActive ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    <div class="flex items-center">
+                        <svg class="mr-3 h-6 w-6 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6.75H18a3 3 0 013 3v1.5a3 3 0 01-3 3h-7.5m0-9L3.75 9.75m6.75-3v12m0-3.75L3.75 14.25" />
+                        </svg>
+                        Notices
+                    </div>
+
+                    <svg class="h-5 w-5 flex-shrink-0 transform transition-transform duration-150"
+                         :class="open ? 'rotate-180' : ''"
+                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+
+                <div x-show="open" x-cloak class="ml-10 space-y-1">
+                    <a href="{{ route('notices.noticeboard') }}"
+                       class="block px-2 py-2 text-sm rounded-md {{ request()->routeIs('notices.noticeboard') ? 'text-emerald-400 font-semibold' : 'text-gray-300 hover:text-white' }}">
+                        Notice Board
+                    </a>
+
+                    <a href="{{ route('notices.index') }}"
+                       class="block px-2 py-2 text-sm rounded-md {{ request()->routeIs('notices.index') || request()->routeIs('notices.show') || request()->routeIs('notices.edit') ? 'text-emerald-400 font-semibold' : 'text-gray-300 hover:text-white' }}">
+                        All Notices
+                    </a>
+
+                    @can('create', \App\Models\Notice::class)
+                        <a href="{{ route('notices.create') }}"
+                           class="block px-2 py-2 text-sm rounded-md {{ request()->routeIs('notices.create') ? 'text-emerald-400 font-semibold' : 'text-gray-300 hover:text-white' }}">
+                            Post Notice
+                        </a>
+                    @endcan
+                </div>
+            </div>
         @endif
 
         <a href="{{ route('notifications.index') }}"

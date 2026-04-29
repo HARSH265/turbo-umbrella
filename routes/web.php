@@ -89,6 +89,10 @@ Route::middleware(['auth', 'verified', 'user.active'])->group(function () {
 
     // Notices
     Route::resource('notices', NoticeController::class);
+    Route::post('notices/{notice}/publish', [NoticeController::class, 'publish'])->name('notices.publish');
+    Route::post('notices/{notice}/archive', [NoticeController::class, 'archive'])->name('notices.archive');
+    Route::post('notices/{notice}/pin', [NoticeController::class, 'pin'])->name('notices.pin');
+    Route::get('noticeboard', [NoticeController::class, 'noticeboard'])->name('notices.noticeboard');
 
     // Visitors
     Route::resource('visitors', VisitorController::class)->only(['index', 'create', 'store', 'show']);

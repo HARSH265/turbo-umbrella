@@ -4,35 +4,73 @@
 @section('page-title', 'Create Notice')
 
 @section('content')
-<div class="max-w-4xl mx-auto">
-    <div class="bg-white rounded-lg shadow p-6">
-        <h1 class="text-2xl font-bold text-gray-900 mb-6">Create Notice</h1>
+<div class="max-w-5xl mx-auto">
+    <x-card header="Create Notice">
+        <h1 class="mb-2 text-2xl font-black text-brand-900 tracking-tight">Create Notice</h1>
+        <p class="mb-6 text-sm text-brand-500">Publish announcements with society, personal, or role-based visibility.</p>
 
         <form method="POST" action="{{ route('notices.store') }}" enctype="multipart/form-data">
             @csrf
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Society <span class="text-red-500">*</span></label>
-                    <select name="society_id" required class="w-full border-gray-300 rounded-lg">
-                        <option value="">Select society</option>
+                    <x-input-label value="Society" class="mb-2 text-xs font-bold uppercase tracking-widest text-brand-500" />
+                    <select name="society_id" class="w-full rounded-xl border-brand-200 text-sm text-brand-800 focus:border-brand-500 focus:ring-brand-500/10" {{ auth()->user()->isSocietyAdmin() ? 'disabled' : '' }}>
+                        @unless(auth()->user()->isSocietyAdmin())
+                            <option value="">Global Notice</option>
+                        @endunless
                         @foreach($societies as $society)
-                            <option value="{{ $society->id }}" {{ old('society_id') == $society->id ? 'selected' : '' }}>
+                            <option value="{{ $society->id }}" {{ (string) old('society_id', auth()->user()->isSocietyAdmin() ? auth()->user()->society_id : '') === (string) $society->id ? 'selected' : '' }}>
                                 {{ $society->name }}
                             </option>
                         @endforeach
                     </select>
+                    @if(auth()->user()->isSocietyAdmin())
+                        <input type="hidden" name="society_id" value="{{ auth()->user()->society_id }}">
+                    @endif
                     @error('society_id')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Priority <span class="text-red-500">*</span></label>
-                    <select name="priority" required class="w-full border-gray-300 rounded-lg">
-                        <option value="normal" {{ old('priority') === 'normal' ? 'selected' : '' }}>Normal</option>
-                        <option value="important" {{ old('priority') === 'important' ? 'selected' : '' }}>Important</option>
-                        <option value="urgent" {{ old('priority') === 'urgent' ? 'selected' : '' }}>Urgent</option>
+                    <x-input-label value="Status" class="mb-2 text-xs font-bold uppercase tracking-widest text-brand-500" />
+                    <select name="status" required class="w-full rounded-xl border-brand-200 text-sm text-brand-800 focus:border-brand-500 focus:ring-brand-500/10">
+                        @foreach($statuses as $status)
+                            <option value="{{ $status->value }}" {{ old('status', 'draft') === $status->value ? 'selected' : '' }}>
+                                {{ $status->label() }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('status')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div>
+                    <x-input-label value="Category" class="mb-2 text-xs font-bold uppercase tracking-widest text-brand-500" />
+                    <select name="category" required class="w-full rounded-xl border-brand-200 text-sm text-brand-800 focus:border-brand-500 focus:ring-brand-500/10">
+                        @foreach($categories as $category)
+                            <option value="{{ $category->value }}" {{ old('category', 'general') === $category->value ? 'selected' : '' }}>
+                                {{ $category->label() }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('category')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <x-input-label value="Priority" class="mb-2 text-xs font-bold uppercase tracking-widest text-brand-500" />
+                    <select name="priority" required class="w-full rounded-xl border-brand-200 text-sm text-brand-800 focus:border-brand-500 focus:ring-brand-500/10">
+                        @foreach($priorities as $priority)
+                            <option value="{{ $priority->value }}" {{ old('priority', 'normal') === $priority->value ? 'selected' : '' }}>
+                                {{ $priority->label() }}
+                            </option>
+                        @endforeach
                     </select>
                     @error('priority')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -41,16 +79,16 @@
             </div>
 
             <div class="mt-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Title <span class="text-red-500">*</span></label>
-                <input type="text" name="title" value="{{ old('title') }}" required class="w-full border-gray-300 rounded-lg">
+                <x-input-label value="Title" class="mb-2 text-xs font-bold uppercase tracking-widest text-brand-500" />
+                <input type="text" name="title" value="{{ old('title') }}" required class="w-full rounded-xl border-brand-200 text-brand-800 shadow-sm focus:border-brand-500 focus:ring-brand-500/10">
                 @error('title')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
 
             <div class="mt-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Content <span class="text-red-500">*</span></label>
-                <textarea name="content" rows="6" required class="w-full border-gray-300 rounded-lg">{{ old('content') }}</textarea>
+                <x-input-label value="Content" class="mb-2 text-xs font-bold uppercase tracking-widest text-brand-500" />
+                <textarea name="content" rows="6" required class="w-full rounded-xl border-brand-200 text-brand-800 shadow-sm focus:border-brand-500 focus:ring-brand-500/10">{{ old('content') }}</textarea>
                 @error('content')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -58,10 +96,13 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Visibility <span class="text-red-500">*</span></label>
-                    <select name="visibility" required class="w-full border-gray-300 rounded-lg">
-                        <option value="all" {{ old('visibility', 'all') === 'all' ? 'selected' : '' }}>All Residents</option>
-                        <option value="specific" {{ old('visibility') === 'specific' ? 'selected' : '' }}>Specific Residents</option>
+                    <x-input-label value="Visibility" class="mb-2 text-xs font-bold uppercase tracking-widest text-brand-500" />
+                    <select name="visibility" required class="w-full rounded-xl border-brand-200 text-sm text-brand-800 focus:border-brand-500 focus:ring-brand-500/10">
+                        @foreach($visibilities as $visibility)
+                            <option value="{{ $visibility->value }}" {{ old('visibility', 'public') === $visibility->value ? 'selected' : '' }}>
+                                {{ $visibility->label() }}
+                            </option>
+                        @endforeach
                     </select>
                     @error('visibility')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -69,9 +110,9 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Publish Date <span class="text-red-500">*</span></label>
-                    <input type="date" name="publish_date" value="{{ old('publish_date', now()->toDateString()) }}" required class="w-full border-gray-300 rounded-lg">
-                    @error('publish_date')
+                    <x-input-label value="Expires At" class="mb-2 text-xs font-bold uppercase tracking-widest text-brand-500" />
+                    <input type="datetime-local" name="expires_at" value="{{ old('expires_at') }}" class="w-full rounded-xl border-brand-200 text-brand-800 shadow-sm focus:border-brand-500 focus:ring-brand-500/10">
+                    @error('expires_at')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
@@ -79,46 +120,64 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Expiry Date</label>
-                    <input type="date" name="expiry_date" value="{{ old('expiry_date') }}" class="w-full border-gray-300 rounded-lg">
-                    @error('expiry_date')
+                    <x-input-label value="Target User" class="mb-2 text-xs font-bold uppercase tracking-widest text-brand-500" />
+                    <select name="target_user_id" class="w-full rounded-xl border-brand-200 text-sm text-brand-800 focus:border-brand-500 focus:ring-brand-500/10">
+                        <option value="">Select user</option>
+                        @foreach($users as $user)
+                            <option value="{{ $user->id }}" {{ old('target_user_id') == $user->id ? 'selected' : '' }}>
+                                {{ $user->name }} ({{ $user->email }})
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs italic text-brand-400">Used only for personal notices.</p>
+                    @error('target_user_id')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Attachments</label>
-                    <input type="file" name="files[]" multiple class="w-full border-gray-300 rounded-lg">
-                    @error('files.*')
+                    <x-input-label value="Target Role" class="mb-2 text-xs font-bold uppercase tracking-widest text-brand-500" />
+                    <select name="target_role" class="w-full rounded-xl border-brand-200 text-sm text-brand-800 focus:border-brand-500 focus:ring-brand-500/10">
+                        <option value="">Select role</option>
+                        @foreach(['resident' => 'Resident', 'staff' => 'Staff', 'society-admin' => 'Society Admin'] as $value => $label)
+                            <option value="{{ $value }}" {{ old('target_role') === $value ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs italic text-brand-400">Used only for role-based notices.</p>
+                    @error('target_role')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
             </div>
 
+            <div class="mt-6 flex items-center">
+                <input type="checkbox" name="is_pinned" id="is_pinned" value="1" {{ old('is_pinned') ? 'checked' : '' }} class="rounded border-brand-300 text-amber-600 focus:ring-amber-500/20">
+                <label for="is_pinned" class="ml-2 text-sm font-medium text-brand-700">Pin this notice to the top of the notice board</label>
+            </div>
+
             <div class="mt-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Recipients</label>
-                <select name="recipients[]" multiple class="w-full border-gray-300 rounded-lg min-h-40">
-                    @foreach($residents as $resident)
-                        <option value="{{ $resident->id }}" {{ collect(old('recipients', []))->contains($resident->id) ? 'selected' : '' }}>
-                            {{ $resident->name }} ({{ $resident->email }})
-                        </option>
-                    @endforeach
-                </select>
-                <p class="mt-1 text-xs text-gray-500">Used only when visibility is set to specific.</p>
-                @error('recipients')
+                <x-input-label value="Attachments" class="mb-2 text-xs font-bold uppercase tracking-widest text-brand-500" />
+                <input type="file" name="attachments[]" multiple class="w-full rounded-xl border-brand-200 text-sm text-brand-700 file:mr-4 file:rounded-lg file:border-0 file:bg-brand-900 file:px-4 file:py-2 file:text-xs file:font-black file:uppercase file:tracking-widest file:text-white">
+                <p class="mt-1 text-xs italic text-brand-400">Up to 5 files. JPG, PNG, PDF, DOCX.</p>
+                @error('attachments')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+                @error('attachments.*')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
 
             <div class="mt-6 flex justify-end space-x-3">
-                <a href="{{ route('notices.index') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                <a href="{{ route('notices.index') }}" class="inline-flex items-center rounded-xl border border-brand-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-brand-700 hover:bg-brand-50">
                     Cancel
                 </a>
-                <button type="submit" class="px-5 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
-                    Publish Notice
+                <button type="submit" class="rounded-xl bg-brand-900 px-5 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-brand-800">
+                    Save Notice
                 </button>
             </div>
         </form>
-    </div>
+    </x-card>
 </div>
 @endsection

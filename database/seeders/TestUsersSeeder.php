@@ -70,12 +70,17 @@ class TestUsersSeeder extends Seeder
             [
                 'name' => 'Society Admin',
                 'phone' => '9876543211',
+                'society_id' => $society->id,
                 'password' => Hash::make('Admin@123'),
                 'email_verified_at' => now(),
                 'is_active' => true,
                 'created_by' => 1,
             ]
         );
+        $societyAdmin->forceFill([
+            'society_id' => $society->id,
+            'is_active' => true,
+        ])->save();
         if (!$societyAdmin->roles()->where('role_id', $societyAdminRole->id)->exists()) {
             $societyAdmin->roles()->attach($societyAdminRole->id);
         }
@@ -95,12 +100,17 @@ class TestUsersSeeder extends Seeder
                 [
                     'name' => $residentData['name'],
                     'phone' => $residentData['phone'],
+                    'society_id' => $society->id,
                     'password' => Hash::make('Resident@123'),
                     'email_verified_at' => now(),
                     'is_active' => true,
                     'created_by' => 1,
                 ]
             );
+            $resident->forceFill([
+                'society_id' => $society->id,
+                'is_active' => true,
+            ])->save();
 
             // Assign resident role
             if (!$resident->roles()->where('role_id', $residentRole->id)->exists()) {
@@ -134,12 +144,17 @@ class TestUsersSeeder extends Seeder
                 [
                     'name' => $staffData['name'],
                     'phone' => $staffData['phone'],
+                    'society_id' => $society->id,
                     'password' => Hash::make('Staff@123'),
                     'email_verified_at' => now(),
                     'is_active' => true,
                     'created_by' => 1,
                 ]
             );
+            $staff->forceFill([
+                'society_id' => $society->id,
+                'is_active' => true,
+            ])->save();
 
             // Assign staff role
             if (!$staff->roles()->where('role_id', $staffRole->id)->exists()) {

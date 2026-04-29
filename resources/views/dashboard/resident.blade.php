@@ -175,6 +175,55 @@
         </div>
     </div>
 
+    <div class="bg-white rounded-lg shadow">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900">Notice Board</h2>
+                    <p class="mt-1 text-sm text-gray-500">{{ $stats['notice_board']['total'] }} active notices</p>
+                </div>
+                <a href="{{ route('notices.noticeboard') }}" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                    View all
+                </a>
+            </div>
+
+            @if($stats['notice_board']['pinned']->isEmpty() && $stats['notice_board']['notices']->isEmpty())
+                <p class="text-center text-gray-500 py-8">No active notices right now</p>
+            @else
+                <div class="space-y-3">
+                    @foreach($stats['notice_board']['pinned'] as $notice)
+                        <a href="{{ route('notices.show', $notice) }}" class="block rounded-lg border border-amber-200 bg-amber-50 p-4 hover:shadow-sm transition">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="text-sm font-semibold text-gray-900">{{ $notice->title }}</h3>
+                                        <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-amber-200 text-amber-800">Pinned</span>
+                                    </div>
+                                    <p class="mt-1 text-sm text-gray-600">{{ \Illuminate\Support\Str::limit($notice->content, 90) }}</p>
+                                </div>
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full {{ $notice->priority->badgeClass() }}">
+                                    {{ $notice->priority->label() }}
+                                </span>
+                            </div>
+                        </a>
+                    @endforeach
+
+                    @foreach($stats['notice_board']['notices'] as $notice)
+                        <a href="{{ route('notices.show', $notice) }}" class="block rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <h3 class="text-sm font-semibold text-gray-900">{{ $notice->title }}</h3>
+                                    <p class="mt-1 text-sm text-gray-600">{{ \Illuminate\Support\Str::limit($notice->content, 90) }}</p>
+                                </div>
+                                <span class="text-xs text-gray-500">{{ optional($notice->published_at)->format('d M') }}</span>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    </div>
+
     <!-- Quick Actions -->
     <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>

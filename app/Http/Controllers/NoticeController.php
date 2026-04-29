@@ -1,359 +1,241 @@
 <?php
 
+/**
+ * app/Http/Controllers/NoticeController.php
+ */
+
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Auth;
+use App\Enums\NoticeCategory;
+use App\Enums\NoticePriority;
+use App\Enums\NoticeStatus;
+use App\Enums\NoticeVisibility;
 use App\Http\Requests\StoreNoticeRequest;
 use App\Http\Requests\UpdateNoticeRequest;
 use App\Models\Notice;
 use App\Models\Society;
 use App\Models\User;
-use App\Services\FileService;
-use App\Services\ActivityLogService;
-use App\Services\NotificationService;
+use App\Services\NoticeService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
-/**
- * NoticeController
- * 
- * Manages society notices and announcements
- * Handles creation, publishing, and recipient management
- */
 class NoticeController extends Controller
 {
-    protected FileService $fileService;
-    protected ActivityLogService $activityLog;
-    protected NotificationService $notificationService;
-
     public function __construct(
-        FileService $fileService,
-        ActivityLogService $activityLog,
-        NotificationService $notificationService
-    )
-    {
-        $this->fileService = $fileService;
-        $this->activityLog = $activityLog;
-        $this->notificationService = $notificationService;
-        
-        $this->middleware('permission:notices.view')->only(['index', 'show']);
+        protected NoticeService $noticeService,
+    ) {
+        $this->middleware('permission:notices.view')->only(['index', 'show', 'noticeboard']);
         $this->middleware('permission:notices.create')->only(['create', 'store']);
         $this->middleware('permission:notices.update')->only(['edit', 'update']);
         $this->middleware('permission:notices.delete')->only('destroy');
+        $this->middleware('permission:notices.publish')->only('publish');
+        $this->middleware('permission:notices.archive')->only('archive');
+        $this->middleware('permission:notices.pin')->only('pin');
     }
 
-    /**
-     * Display list of notices
-     */
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $user = Auth::user();
-        $query = Notice::with(['society', 'creator']);
 
-        // For residents, show only notices visible to them
-        if ($user->isResident()) {
-            $query->forUser($user->id);
-        }
+        if ($user->isSocietyAdmin() || $user->isSuperAdmin()) {
+            $notices = $this->noticeService->getAdminNotices($user);
+        } else {
+            $query = Notice::query()
+                ->with(['society', 'creator', 'targetUser', 'attachments'])
+                ->forUser($user)
+                ->active();
 
-        if ($user->isSocietyAdmin() && $user->society_id) {
-            $query->where('society_id', $user->society_id);
-        }
-
-        // Filter by society (for admins)
-        if ($request->filled('society_id')) {
-            $query->where('society_id', $request->society_id);
-        }
-
-        // Filter by priority
-        if ($request->filled('priority')) {
-            $query->where('priority', $request->priority);
-        }
-
-        // Show active by default
-        if (!$request->has('show_all')) {
-            $query->active();
-        }
-
-        $notices = $query->latest('publish_date')->paginate(20)->withQueryString();
-        $societies = Society::active()->get();
-
-        return view('notices.index', compact('notices', 'societies'));
-    }
-
-    /**
-     * Show form to create notice
-     */
-    public function create()
-    {
-        $user = Auth::user();
-        $societies = $user->isSuperAdmin()
-            ? Society::active()->get()
-            : Society::active()->where('id', $user->society_id)->get();
-        $residents = User::withRole('resident')
-            ->active()
-            ->when($user->isSocietyAdmin(), function ($query) use ($user) {
-                $query->where('society_id', $user->society_id);
-            })
-            ->get();
-
-        return view('notices.create', compact('societies', 'residents'));
-    }
-
-    /**
-     * Store new notice
-     */
-    public function store(StoreNoticeRequest $request)
-    {
-        DB::beginTransaction();
-        try {
-            $user = Auth::user();
-            $data = $request->validated();
-            $data['created_by'] = Auth::id();
-
-            if ($user->isSocietyAdmin()) {
-                $data['society_id'] = $user->society_id;
+            if ($request->filled('category')) {
+                $query->byCategory($request->string('category')->toString());
             }
 
-            $this->assertRecipientsBelongToSociety($request->input('recipients', []), (int) $data['society_id']);
-
-            $notice = Notice::create($data);
-
-            // Attach recipients for specific visibility
-            if ($request->visibility === 'specific' && $request->has('recipients')) {
-                $notice->recipients()->attach($request->recipients);
+            if ($request->filled('priority')) {
+                $query->byPriority($request->string('priority')->toString());
             }
 
-            // Upload files if provided
-            if ($request->hasFile('files')) {
-                $this->fileService->uploadMultiple(
-                    $request->file('files'),
-                    'notices',
-                    $notice->id
-                );
-            }
-
-            $this->activityLog->logCreate('notice', $notice->id, $notice->toArray());
-            $this->notifyNoticeRecipients($notice, $request->input('recipients', []));
-
-            DB::commit();
-
-            return redirect()
-                ->route('notices.index')
-                ->with('success', 'Notice created successfully.');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()
-                ->withInput()
-                ->withErrors(['error' => 'Failed to create notice.']);
+            $notices = $query
+                ->orderByDesc('is_pinned')
+                ->orderByDesc('published_at')
+                ->paginate(15)
+                ->withQueryString();
         }
+
+        $societies = $this->availableSocietiesFor($user);
+        $users = $this->availableUsersFor($user);
+
+        return view('notices.index', [
+            'notices' => $notices,
+            'societies' => $societies,
+            'users' => $users,
+            'categories' => NoticeCategory::cases(),
+            'priorities' => NoticePriority::cases(),
+            'statuses' => NoticeStatus::cases(),
+            'visibilities' => NoticeVisibility::cases(),
+        ]);
     }
 
-    /**
-     * Display single notice
-     */
-    public function show(Notice $notice)
+    public function show(Notice $notice): View
     {
-        if (!$this->canAccessNotice($notice)) {
-            abort(403);
-        }
+        $this->authorize('view', $notice);
 
-        $notice->load(['society', 'creator', 'files', 'recipients']);
-
-        // Mark as read for specific recipients
-        if ($notice->visibility === 'specific' && Auth::user()->isResident()) {
-            $notice->markAsReadBy(Auth::id());
-        }
+        $notice->load(['society', 'creator', 'targetUser', 'attachments']);
 
         return view('notices.show', compact('notice'));
     }
 
-    /**
-     * Show form to edit notice
-     */
-    public function edit(Notice $notice)
+    public function create(): View
     {
-        if (!$this->canAccessNotice($notice)) {
-            abort(403);
-        }
+        $this->authorize('create', Notice::class);
 
-        $notice->load('recipients');
         $user = Auth::user();
-        $societies = $user->isSuperAdmin()
+
+        return view('notices.create', [
+            'societies' => $this->availableSocietiesFor($user),
+            'users' => $this->availableUsersFor($user),
+            'categories' => NoticeCategory::cases(),
+            'priorities' => NoticePriority::cases(),
+            'statuses' => NoticeStatus::cases(),
+            'visibilities' => NoticeVisibility::cases(),
+        ]);
+    }
+
+    public function store(StoreNoticeRequest $request): RedirectResponse
+    {
+        try {
+            $this->noticeService->createNotice(
+                $request->validated(),
+                $request->file('attachments', []),
+                Auth::user()
+            );
+
+            return redirect()
+                ->to(route('notices.index', absolute: false))
+                ->with('success', 'Notice created successfully.');
+        } catch (\Throwable $e) {
+            return back()
+                ->withInput()
+                ->withErrors(['error' => 'Failed to create notice: ' . $e->getMessage()]);
+        }
+    }
+
+    public function edit(Notice $notice): View
+    {
+        $this->authorize('update', $notice);
+
+        $user = Auth::user();
+        $notice->load(['targetUser', 'attachments']);
+
+        return view('notices.edit', [
+            'notice' => $notice,
+            'societies' => $this->availableSocietiesFor($user),
+            'users' => $this->availableUsersFor($user),
+            'categories' => NoticeCategory::cases(),
+            'priorities' => NoticePriority::cases(),
+            'statuses' => NoticeStatus::cases(),
+            'visibilities' => NoticeVisibility::cases(),
+        ]);
+    }
+
+    public function update(UpdateNoticeRequest $request, Notice $notice): RedirectResponse
+    {
+        $this->authorize('update', $notice);
+
+        try {
+            $notice = $this->noticeService->updateNotice(
+                $notice,
+                $request->validated(),
+                $request->file('attachments', [])
+            );
+
+            return redirect()
+                ->to(route('notices.show', ['notice' => $notice], absolute: false))
+                ->with('success', 'Notice updated successfully.');
+        } catch (\Throwable $e) {
+            return back()
+                ->withInput()
+                ->withErrors(['error' => 'Failed to update notice: ' . $e->getMessage()]);
+        }
+    }
+
+    public function destroy(Notice $notice): RedirectResponse
+    {
+        $this->authorize('delete', $notice);
+
+        try {
+            $this->noticeService->deleteNotice($notice);
+
+            return redirect()
+                ->to(route('notices.index', absolute: false))
+                ->with('success', 'Notice deleted successfully.');
+        } catch (\Throwable $e) {
+            return back()->withErrors(['error' => 'Failed to delete notice: ' . $e->getMessage()]);
+        }
+    }
+
+    public function publish(Notice $notice): RedirectResponse
+    {
+        $this->authorize('publish', $notice);
+
+        try {
+            $this->noticeService->publishNotice($notice);
+
+            return back()->with('success', 'Notice published successfully.');
+        } catch (\Throwable $e) {
+            return back()->withErrors(['error' => 'Failed to publish notice: ' . $e->getMessage()]);
+        }
+    }
+
+    public function archive(Notice $notice): RedirectResponse
+    {
+        $this->authorize('archive', $notice);
+
+        try {
+            $this->noticeService->archiveNotice($notice);
+
+            return back()->with('success', 'Notice archived successfully.');
+        } catch (\Throwable $e) {
+            return back()->withErrors(['error' => 'Failed to archive notice: ' . $e->getMessage()]);
+        }
+    }
+
+    public function pin(Notice $notice): RedirectResponse
+    {
+        $this->authorize('pin', $notice);
+
+        try {
+            $this->noticeService->pinNotice($notice);
+
+            return back()->with('success', 'Notice pin status updated successfully.');
+        } catch (\Throwable $e) {
+            return back()->withErrors(['error' => 'Failed to update pin status: ' . $e->getMessage()]);
+        }
+    }
+
+    public function noticeboard(): View
+    {
+        $data = $this->noticeService->getNoticeBoardData(Auth::user());
+
+        return view('notices.noticeboard', $data);
+    }
+
+    private function availableSocietiesFor(User $user)
+    {
+        return $user->isSuperAdmin()
             ? Society::active()->get()
-            : Society::active()->where('id', $user->society_id)->get();
-        $residents = User::withRole('resident')
+            : Society::active()->whereKey($user->society_id)->get();
+    }
+
+    private function availableUsersFor(User $user)
+    {
+        return User::query()
+            ->with('roles')
+            ->withRole('resident')
             ->active()
-            ->when($user->isSocietyAdmin(), function ($query) use ($user) {
+            ->when(!$user->isSuperAdmin(), function ($query) use ($user) {
                 $query->where('society_id', $user->society_id);
             })
             ->get();
-
-        return view('notices.edit', compact('notice', 'societies', 'residents'));
-    }
-
-    /**
-     * Update notice
-     */
-    public function update(UpdateNoticeRequest $request, Notice $notice)
-    {
-        if (!$this->canAccessNotice($notice)) {
-            abort(403);
-        }
-
-        DB::beginTransaction();
-        try {
-            $user = Auth::user();
-            $oldData = $notice->toArray();
-            $data = $request->validated();
-            $data['updated_by'] = Auth::id();
-
-            if ($user->isSocietyAdmin()) {
-                $data['society_id'] = $user->society_id;
-            }
-
-            $this->assertRecipientsBelongToSociety($request->input('recipients', []), (int) $data['society_id']);
-
-            $notice->update($data);
-
-            // Update recipients for specific visibility
-            if ($request->visibility === 'specific') {
-                $notice->recipients()->sync($request->recipients ?? []);
-            } else {
-                $notice->recipients()->detach();
-            }
-
-            // Upload new files if provided
-            if ($request->hasFile('files')) {
-                $this->fileService->uploadMultiple(
-                    $request->file('files'),
-                    'notices',
-                    $notice->id
-                );
-            }
-
-            $this->activityLog->logUpdate('notice', $notice->id, $oldData, $notice->fresh()->toArray());
-            $this->notifyNoticeRecipients($notice->fresh(), $request->input('recipients', []));
-
-            DB::commit();
-
-            return redirect()
-                ->route('notices.show', $notice)
-                ->with('success', 'Notice updated successfully.');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()
-                ->withInput()
-                ->withErrors(['error' => 'Failed to update notice.']);
-        }
-    }
-
-    /**
-     * Delete notice (soft delete)
-     */
-    public function destroy(Notice $notice)
-    {
-        if (!$this->canAccessNotice($notice)) {
-            abort(403);
-        }
-
-        try {
-            $this->activityLog->logDelete('notice', $notice->id, $notice->toArray());
-            $notice->delete();
-
-            return redirect()
-                ->route('notices.index')
-                ->with('success', 'Notice deleted successfully.');
-
-        } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to delete notice.']);
-        }
-    }
-
-    /**
-     * Check if current user can access a notice
-     */
-    private function canAccessNotice(Notice $notice): bool
-    {
-        $user = Auth::user();
-
-        if ($user->isSuperAdmin()) {
-            return true;
-        }
-
-        if ($user->isSocietyAdmin()) {
-            return $notice->society_id === $user->society_id;
-        }
-
-        if (!$user->isResident()) {
-            return false;
-        }
-
-        if ($notice->visibility === 'all') {
-            return true;
-        }
-
-        return $notice->recipients()->where('user_id', $user->id)->exists();
-    }
-
-    private function assertRecipientsBelongToSociety(array $recipientIds, int $societyId): void
-    {
-        if (empty($recipientIds)) {
-            return;
-        }
-
-        $count = User::withRole('resident')
-            ->active()
-            ->where('society_id', $societyId)
-            ->whereIn('id', $recipientIds)
-            ->count();
-
-        if ($count !== count($recipientIds)) {
-            throw new \InvalidArgumentException('Selected recipients must belong to the selected society.');
-        }
-    }
-
-    private function notifyNoticeRecipients(Notice $notice, array $recipientIds): void
-    {
-        $title = 'New notice published';
-        $message = $notice->title;
-        $url = route('notices.show', $notice);
-
-        if ($notice->visibility === 'all') {
-            $this->notificationService->sendToSociety(
-                (int) $notice->society_id,
-                \App\Enums\NotificationType::NOTICE_PUBLISHED,
-                $title,
-                $message,
-                'notices',
-                $notice->id,
-                $url
-            );
-
-            return;
-        }
-
-        if (empty($recipientIds)) {
-            return;
-        }
-
-        $users = User::withRole('resident')
-            ->active()
-            ->where('society_id', $notice->society_id)
-            ->whereIn('id', $recipientIds)
-            ->get();
-
-        foreach ($users as $user) {
-            $this->notificationService->sendToUser(
-                $user,
-                \App\Enums\NotificationType::NOTICE_PUBLISHED,
-                $title,
-                $message,
-                'notices',
-                $notice->id,
-                $url
-            );
-        }
     }
 }

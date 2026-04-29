@@ -7,60 +7,99 @@
 <div class="max-w-5xl mx-auto space-y-6">
     <div class="flex items-center justify-between">
         <a href="{{ route('notices.index') }}"
-            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+            class="inline-flex items-center rounded-xl border border-brand-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-brand-700 hover:bg-brand-50">
             Back to Notices
         </a>
-        @can('notices.update')
-            <a href="{{ route('notices.edit', $notice) }}" class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
+        @can('update', $notice)
+            <a href="{{ route('notices.edit', $notice) }}" class="rounded-xl bg-brand-900 px-4 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-brand-800">
                 Edit Notice
             </a>
         @endcan
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6">
+    <x-card header="Notice Details">
         <div class="flex items-start justify-between gap-6">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900">{{ $notice->title }}</h1>
-                <p class="mt-2 text-sm text-gray-600">{{ $notice->society->name }}</p>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-3xl font-black text-brand-900 tracking-tight">{{ $notice->title }}</h1>
+                    @if($notice->is_pinned)
+                        <span class="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-amber-800">
+                            Pinned
+                        </span>
+                    @endif
+                </div>
+                <p class="mt-2 text-sm text-brand-500">
+                    {{ $notice->isGlobal() ? 'Global Notice' : ($notice->society?->name ?? 'Society Notice') }}
+                </p>
             </div>
-            <div class="text-right">
-                <span class="px-3 py-1 text-sm font-semibold rounded-full {{ $notice->priority === 'urgent' ? 'bg-red-100 text-red-800' : ($notice->priority === 'important' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800') }}">
-                    {{ ucfirst($notice->priority) }}
+            <div class="flex items-center gap-2">
+                <span class="px-3 py-1 text-sm font-semibold rounded-full {{ $notice->priority->badgeClass() }}">
+                    {{ $notice->priority->label() }}
+                </span>
+                <span class="px-3 py-1 text-sm font-semibold rounded-full border
+                    @if($notice->status->value === 'published') bg-green-100 text-green-800 border-green-200
+                    @elseif($notice->status->value === 'archived') bg-gray-100 text-gray-800 border-gray-200
+                    @else bg-yellow-100 text-yellow-800 border-yellow-200
+                    @endif">
+                    {{ $notice->status->label() }}
                 </span>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 pt-6 border-t">
+        <div class="mt-6 grid grid-cols-1 gap-6 border-t border-brand-100 pt-6 md:grid-cols-4">
             <div>
-                <p class="text-sm text-gray-600">Publish Date</p>
-                <p class="mt-1 font-semibold text-gray-900">{{ $notice->publish_date->format('d M Y') }}</p>
+                <p class="text-xs font-bold uppercase tracking-widest text-brand-400">Category</p>
+                <p class="mt-1 font-semibold text-brand-900">{{ $notice->category->label() }}</p>
             </div>
             <div>
-                <p class="text-sm text-gray-600">Expiry Date</p>
-                <p class="mt-1 font-semibold text-gray-900">{{ optional($notice->expiry_date)->format('d M Y') ?? 'No expiry' }}</p>
+                <p class="text-xs font-bold uppercase tracking-widest text-brand-400">Published At</p>
+                <p class="mt-1 font-semibold text-brand-900">
+                    {{ optional($notice->published_at)->format('d M Y, h:i A') ?? 'Not published yet' }}
+                </p>
             </div>
             <div>
-                <p class="text-sm text-gray-600">Visibility</p>
-                <p class="mt-1 font-semibold text-gray-900">{{ $notice->visibility === 'all' ? 'All Residents' : 'Specific Residents' }}</p>
+                <p class="text-xs font-bold uppercase tracking-widest text-brand-400">Expires At</p>
+                <p class="mt-1 font-semibold text-brand-900">
+                    {{ optional($notice->expires_at)->format('d M Y, h:i A') ?? 'No expiry' }}
+                </p>
+            </div>
+            <div>
+                <p class="text-xs font-bold uppercase tracking-widest text-brand-400">Visibility</p>
+                <p class="mt-1 font-semibold text-brand-900">{{ $notice->visibility->label() }}</p>
             </div>
         </div>
 
-        <div class="mt-6 pt-6 border-t">
-            <h2 class="text-lg font-semibold text-gray-900 mb-3">Notice Content</h2>
-            <p class="text-gray-700 whitespace-pre-line">{{ $notice->content }}</p>
+        @if($notice->visibility->value === 'personal' && $notice->targetUser)
+            <div class="mt-6 border-t border-brand-100 pt-6">
+                <p class="text-xs font-bold uppercase tracking-widest text-brand-400">Target User</p>
+                <p class="mt-1 font-semibold text-brand-900">{{ $notice->targetUser->name }}</p>
+                <p class="text-sm text-brand-500">{{ $notice->targetUser->email }}</p>
+            </div>
+        @endif
+
+        @if($notice->visibility->value === 'role_based' && $notice->target_role)
+            <div class="mt-6 border-t border-brand-100 pt-6">
+                <p class="text-xs font-bold uppercase tracking-widest text-brand-400">Target Role</p>
+                <p class="mt-1 font-semibold text-brand-900">{{ str_replace('-', ' ', ucfirst($notice->target_role)) }}</p>
+            </div>
+        @endif
+
+        <div class="mt-6 border-t border-brand-100 pt-6">
+            <h2 class="mb-3 text-lg font-semibold text-brand-900">Notice Content</h2>
+            <p class="whitespace-pre-line leading-7 text-brand-700">{{ $notice->content }}</p>
         </div>
 
-        @if($notice->files->isNotEmpty())
-            <div class="mt-6 pt-6 border-t">
-                <h2 class="text-lg font-semibold text-gray-900 mb-3">Attachments</h2>
+        @if($notice->attachments->isNotEmpty())
+            <div class="mt-6 border-t border-brand-100 pt-6">
+                <h2 class="mb-3 text-lg font-semibold text-brand-900">Attachments</h2>
                 <div class="space-y-3">
-                    @foreach($notice->files as $file)
-                        <div class="flex items-center justify-between border rounded-lg p-4">
+                    @foreach($notice->attachments as $file)
+                        <div class="flex items-center justify-between rounded-xl border border-brand-100 bg-brand-50/40 p-4">
                             <div>
-                                <p class="font-medium text-gray-900">{{ $file->original_name }}</p>
-                                <p class="text-sm text-gray-500">{{ $file->human_size }}</p>
+                                <p class="font-medium text-brand-900">{{ $file->original_name }}</p>
+                                <p class="text-sm text-brand-500">{{ $file->human_size }}</p>
                             </div>
-                            <a href="{{ route('files.download', $file) }}" class="text-blue-600 hover:text-blue-800">
+                            <a href="{{ route('files.download', $file) }}" class="text-sm font-semibold text-brand-700 hover:text-brand-900">
                                 Download
                             </a>
                         </div>
@@ -68,19 +107,6 @@
                 </div>
             </div>
         @endif
-
-        @if($notice->visibility === 'specific' && (auth()->user()->isSuperAdmin() || auth()->user()->isSocietyAdmin()))
-            <div class="mt-6 pt-6 border-t">
-                <h2 class="text-lg font-semibold text-gray-900 mb-3">Recipients</h2>
-                <div class="flex flex-wrap gap-2">
-                    @foreach($notice->recipients as $recipient)
-                        <span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
-                            {{ $recipient->name }}
-                        </span>
-                    @endforeach
-                </div>
-            </div>
-        @endif
-    </div>
+    </x-card>
 </div>
 @endsection

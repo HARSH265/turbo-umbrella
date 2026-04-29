@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Auth;
 use App\Services\ComplaintService;
 use App\Services\MaintenanceService;
+use App\Services\NoticeService;
 use App\Models\Society;
 use App\Models\Flat;
 use App\Models\User;
@@ -19,13 +20,16 @@ class DashboardController extends Controller
 {
     protected ComplaintService $complaintService;
     protected MaintenanceService $maintenanceService;
+    protected NoticeService $noticeService;
 
     public function __construct(
         ComplaintService $complaintService,
-        MaintenanceService $maintenanceService
+        MaintenanceService $maintenanceService,
+        NoticeService $noticeService
     ) {
         $this->complaintService = $complaintService;
         $this->maintenanceService = $maintenanceService;
+        $this->noticeService = $noticeService;
     }
 
     /**
@@ -78,6 +82,7 @@ class DashboardController extends Controller
             'total_residents' => $residentsQuery->count(),
             'complaints' => $complaintsSummary,
             'maintenance' => $maintenanceSummary,
+            'notice_board' => $this->noticeService->getNoticeBoardData($user),
         ];
 
         return view('dashboard.admin', compact('stats'));
@@ -106,6 +111,7 @@ class DashboardController extends Controller
                 'in_progress' => $user->complaints()->where('status', 'in_progress')->count(),
                 'resolved' => $user->complaints()->where('status', 'resolved')->count(),
             ],
+            'notice_board' => $this->noticeService->getNoticeBoardData($user),
         ];
 
         return view('dashboard.resident', compact('stats'));
@@ -131,6 +137,7 @@ class DashboardController extends Controller
                 ->where('status', 'resolved')
                 ->whereDate('resolved_at', today())
                 ->count(),
+            'notice_board' => $this->noticeService->getNoticeBoardData($user),
         ];
 
         return view('dashboard.staff', compact('stats'));

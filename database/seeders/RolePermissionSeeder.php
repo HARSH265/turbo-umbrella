@@ -54,6 +54,7 @@ class RolePermissionSeeder extends Seeder
         $staffPermissions = Permission::whereIn('slug', [
             'complaints.view',
             'complaints.update',
+            'notices.view',
             'visitors.view',
             'visitors.create',
             'visitors.update',

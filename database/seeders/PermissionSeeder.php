@@ -52,6 +52,9 @@ class PermissionSeeder extends Seeder
             ['name' => 'Create Notices', 'slug' => 'notices.create', 'module' => 'notices'],
             ['name' => 'Update Notices', 'slug' => 'notices.update', 'module' => 'notices'],
             ['name' => 'Delete Notices', 'slug' => 'notices.delete', 'module' => 'notices'],
+            ['name' => 'Publish Notices', 'slug' => 'notices.publish', 'module' => 'notices'],
+            ['name' => 'Archive Notices', 'slug' => 'notices.archive', 'module' => 'notices'],
+            ['name' => 'Pin Notices', 'slug' => 'notices.pin', 'module' => 'notices'],
 
             // Visitors
             ['name' => 'View Visitors', 'slug' => 'visitors.view', 'module' => 'visitors'],

@@ -78,16 +78,47 @@ class FilePolicy
             return $notice->society_id === $user->society_id;
         }
 
-        if ($user->isResident()) {
+        if ($user->isResident() || $user->isStaff()) {
+            if ($notice->isArchived()) {
+                return false;
+            }
+
+            if ($notice->isGlobal()) {
+                return $this->canAccessGlobalNoticeFile($user, $notice);
+            }
+
             if ($notice->society_id !== $user->society_id) {
                 return false;
             }
 
-            if ($notice->visibility === 'all') {
+            if ($notice->visibility === \App\Enums\NoticeVisibility::PUBLIC) {
                 return true;
             }
 
-            return $notice->recipients()->where('user_id', $user->id)->exists();
+            if ($notice->visibility === \App\Enums\NoticeVisibility::PERSONAL) {
+                return $notice->target_user_id === $user->id;
+            }
+
+            if ($notice->visibility === \App\Enums\NoticeVisibility::ROLE_BASED) {
+                return $notice->target_role !== null && $user->hasRole($notice->target_role);
+            }
+        }
+
+        return false;
+    }
+
+    private function canAccessGlobalNoticeFile(User $user, \App\Models\Notice $notice): bool
+    {
+        if ($notice->visibility === \App\Enums\NoticeVisibility::PUBLIC) {
+            return true;
+        }
+
+        if ($notice->visibility === \App\Enums\NoticeVisibility::PERSONAL) {
+            return $notice->target_user_id === $user->id;
+        }
+
+        if ($notice->visibility === \App\Enums\NoticeVisibility::ROLE_BASED) {
+            return $notice->target_role !== null && $user->hasRole($notice->target_role);
         }
 
         return false;

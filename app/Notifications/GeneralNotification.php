@@ -4,7 +4,6 @@ namespace App\Notifications;
 
 use App\Enums\NotificationType;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
 /**
@@ -26,7 +25,7 @@ use Illuminate\Notifications\Notification;
  *   "color"      : "blue"
  * }
  */
-class GeneralNotification extends Notification implements ShouldQueue
+class GeneralNotification extends Notification
 {
     use Queueable;
 
