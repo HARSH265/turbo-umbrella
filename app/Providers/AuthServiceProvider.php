@@ -24,13 +24,12 @@ class AuthServiceProvider extends ServiceProvider
     $this->registerPolicies(); // ✅ IMPORTANT
 
     Gate::before(function ($user, string $ability) {
-
         if (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin()) {
             return true;
         }
 
-        if (method_exists($user, 'hasPermission')) {
-            return $user->hasPermission($ability);
+        if (method_exists($user, 'hasPermission') && $user->hasPermission($ability)) {
+            return true;
         }
 
         return null;

@@ -26,6 +26,7 @@ class StoreUserRequest extends FormRequest
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'phone' => 'required|string|regex:/^[0-9]{10}$/|unique:users,phone',
+            'society_id' => 'nullable|exists:societies,id',
             'password' => [
                 'required',
                 'confirmed',

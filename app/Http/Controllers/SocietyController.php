@@ -32,6 +32,11 @@ class SocietyController extends Controller
     public function index(Request $request)
     {
         $query = Society::with('creator');
+        $user = Auth::user();
+
+        if ($user->isSocietyAdmin()) {
+            $query->whereKey($user->society_id);
+        }
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -83,6 +88,8 @@ class SocietyController extends Controller
 
     public function show(Society $society)
     {
+        $this->authorizeSocietyAccess($society);
+
         $society->load(['towers', 'notices' => fn($q) => $q->latest()->take(5)]);
         
         $stats = [
@@ -96,11 +103,15 @@ class SocietyController extends Controller
 
     public function edit(Society $society)
     {
+        $this->authorizeSocietyAccess($society);
+
         return view('societies.edit', compact('society'));
     }
 
     public function update(UpdateSocietyRequest $request, Society $society)
     {
+        $this->authorizeSocietyAccess($society);
+
         DB::beginTransaction();
         try {
             $oldData = $society->toArray();
@@ -127,6 +138,8 @@ class SocietyController extends Controller
 
     public function destroy(Society $society)
     {
+        $this->authorizeSocietyAccess($society);
+
         // Check if society has towers
         if ($society->towers()->exists()) {
             return back()->withErrors(['error' => 'Cannot delete society with existing towers.']);
@@ -142,6 +155,15 @@ class SocietyController extends Controller
 
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Failed to delete society.']);
+        }
+    }
+
+    private function authorizeSocietyAccess(Society $society): void
+    {
+        $user = Auth::user();
+
+        if ($user->isSocietyAdmin() && $society->id !== $user->society_id) {
+            abort(403, 'Unauthorized access to this society.');
         }
     }
 }

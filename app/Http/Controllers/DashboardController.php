@@ -55,13 +55,29 @@ class DashboardController extends Controller
      */
     private function adminDashboard()
     {
+        $user = Auth::user();
+        $societyId = $user->isSocietyAdmin() ? $user->society_id : null;
+
+        $flatsQuery = Flat::active();
+        $residentsQuery = User::withRole('resident')->active();
+        $complaintsSummary = $this->complaintService->getDashboardSummary($societyId);
+        $maintenanceSummary = $this->maintenanceService->getSummary($societyId);
+
+        if ($societyId) {
+            $flatsQuery->whereHas('tower', function ($query) use ($societyId) {
+                $query->where('society_id', $societyId);
+            });
+
+            $residentsQuery->where('society_id', $societyId);
+        }
+
         $stats = [
-            'total_societies' => Society::active()->count(),
-            'total_flats' => Flat::active()->count(),
-            'occupied_flats' => Flat::occupied()->count(),
-            'total_residents' => User::withRole('resident')->active()->count(),
-            'complaints' => $this->complaintService->getDashboardSummary(),
-            'maintenance' => $this->maintenanceService->getSummary(),
+            'total_societies' => $societyId ? 1 : Society::active()->count(),
+            'total_flats' => (clone $flatsQuery)->count(),
+            'occupied_flats' => (clone $flatsQuery)->where('occupancy_status', 'occupied')->count(),
+            'total_residents' => $residentsQuery->count(),
+            'complaints' => $complaintsSummary,
+            'maintenance' => $maintenanceSummary,
         ];
 
         return view('dashboard.admin', compact('stats'));

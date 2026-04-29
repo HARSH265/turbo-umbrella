@@ -291,13 +291,21 @@ class ComplaintService
      * 
      * @return array
      */
-    public function getDashboardSummary(): array
+    public function getDashboardSummary(?int $societyId = null): array
     {
+        $query = Complaint::query();
+
+        if ($societyId) {
+            $query->whereHas('flat.tower', function ($towerQuery) use ($societyId) {
+                $towerQuery->where('society_id', $societyId);
+            });
+        }
+
         return [
-            'open' => Complaint::where('status', 'open')->count(),
-            'in_progress' => Complaint::where('status', 'in_progress')->count(),
-            'resolved' => Complaint::where('status', 'resolved')->count(),
-            'high_priority' => Complaint::whereIn('priority', ['high', 'urgent'])
+            'open' => (clone $query)->where('status', 'open')->count(),
+            'in_progress' => (clone $query)->where('status', 'in_progress')->count(),
+            'resolved' => (clone $query)->where('status', 'resolved')->count(),
+            'high_priority' => (clone $query)->whereIn('priority', ['high', 'urgent'])
                 ->whereNotIn('status', ['resolved', 'closed'])
                 ->count(),
         ];

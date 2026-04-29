@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Http\Requests;
+use App\Models\Complaint;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -23,9 +25,22 @@ class AssignComplaintRequest extends FormRequest
                 'required',
                 'exists:users,id',
                 function ($attribute, $value, $fail) {
-                    $user = \App\Models\User::find($value);
+                    $user = User::find($value);
                     if (!$user || (!$user->isStaff() && !$user->isSocietyAdmin())) {
                         $fail('Selected user must be a staff member or society admin.');
+                        return;
+                    }
+
+                    $complaint = $this->route('complaint');
+
+                    if (!$complaint instanceof Complaint) {
+                        return;
+                    }
+
+                    $complaintSocietyId = $complaint->flat?->tower?->society_id;
+
+                    if ($complaintSocietyId && $user->society_id !== $complaintSocietyId) {
+                        $fail('Selected user must belong to the same society as the complaint.');
                     }
                 },
             ],

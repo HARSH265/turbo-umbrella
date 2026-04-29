@@ -7,6 +7,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use App\Models\Role;
+use App\Models\Society;
 use App\Services\ActivityLogService;
 use App\Services\FileService;
 use Illuminate\Http\Request;
@@ -40,6 +41,11 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $query = User::with('roles');
+        $user = Auth::user();
+
+        if ($user->isSocietyAdmin()) {
+            $query->where('society_id', $user->society_id);
+        }
 
         // Filter by role
         if ($request->filled('role')) {
@@ -62,7 +68,7 @@ class UserController extends Controller
         }
 
         $users = $query->latest()->paginate(50)->withQueryString();
-        $roles = Role::all();
+        $roles = $this->availableRolesFor(Auth::user())->get();
 
         return view('users.index', compact('users', 'roles'));
     }
@@ -72,9 +78,10 @@ class UserController extends Controller
      */
     public function create()
     {
-        $roles = Role::all();
+        $roles = $this->availableRolesFor(Auth::user())->get();
+        $societies = $this->availableSocietiesFor(Auth::user())->get();
 
-        return view('users.create', compact('roles'));
+        return view('users.create', compact('roles', 'societies'));
     }
 
     /**
@@ -84,9 +91,15 @@ class UserController extends Controller
     {
         DB::beginTransaction();
         try {
+            $authUser = Auth::user();
             $data = $request->validated();
             $data['created_by'] = Auth::id();
             $data['password'] = Hash::make($data['password']);
+            $role = $this->availableRolesFor($authUser)->findOrFail($request->role_id);
+
+            if ($authUser->isSocietyAdmin()) {
+                $data['society_id'] = $authUser->society_id;
+            }
 
             // Handle profile photo upload
             if ($request->hasFile('profile_photo')) {
@@ -106,7 +119,7 @@ class UserController extends Controller
             }
 
             // Assign role
-            $user->roles()->attach($request->role_id);
+            $user->roles()->attach($role->id);
 
             $this->activityLog->logCreate('user', $user->id, $user->toArray());
 
@@ -129,6 +142,8 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
+        $this->authorizeManagedUser($user);
+
         $user->load(['roles', 'activeFlats.tower', 'complaints' => fn($q) => $q->latest()->take(5)]);
 
         return view('users.show', compact('user'));
@@ -139,9 +154,11 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        $roles = Role::all();
+        $this->authorizeManagedUser($user);
+        $roles = $this->availableRolesFor(Auth::user())->get();
+        $societies = $this->availableSocietiesFor(Auth::user())->get();
 
-        return view('users.edit', compact('user', 'roles'));
+        return view('users.edit', compact('user', 'roles', 'societies'));
     }
 
     /**
@@ -149,10 +166,13 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
+        $this->authorizeManagedUser($user);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'phone' => 'required|string|regex:/^[0-9]{10}$/|unique:users,phone,' . $user->id,
+            'society_id' => 'nullable|exists:societies,id',
             'role_id' => 'required|exists:roles,id',
             'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'password' => 'nullable|confirmed|min:8',
@@ -161,9 +181,14 @@ class UserController extends Controller
         DB::beginTransaction();
         try {
             $oldData = $user->toArray();
+            $role = $this->availableRolesFor(Auth::user())->findOrFail($request->role_id);
             
-            $data = $request->only(['name', 'email', 'phone']);
+            $data = $request->only(['name', 'email', 'phone', 'society_id']);
             $data['updated_by'] = Auth::id();
+
+            if (Auth::user()->isSocietyAdmin()) {
+                $data['society_id'] = Auth::user()->society_id;
+            }
 
             // Update password if provided
             if ($request->filled('password')) {
@@ -191,7 +216,7 @@ class UserController extends Controller
             $user->update($data);
 
             // Update role
-            $user->roles()->sync([$request->role_id]);
+            $user->roles()->sync([$role->id]);
 
             $this->activityLog->logUpdate('user', $user->id, $oldData, $user->fresh()->toArray());
 
@@ -214,6 +239,8 @@ class UserController extends Controller
      */
     public function toggleActive(User $user)
     {
+        $this->authorizeManagedUser($user);
+
         // Prevent deactivating yourself
         if ($user->id === Auth::id()) {
             return back()->withErrors(['error' => 'You cannot deactivate your own account.']);
@@ -239,6 +266,8 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
+        $this->authorizeManagedUser($user);
+
         // Prevent deleting yourself
         if ($user->id === Auth::id()) {
             return back()->withErrors(['error' => 'You cannot delete your own account.']);
@@ -260,5 +289,42 @@ class UserController extends Controller
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Failed to delete user.']);
         }
+    }
+
+    private function authorizeManagedUser(User $user): void
+    {
+        $authUser = Auth::user();
+
+        if (
+            $authUser->isSocietyAdmin()
+            && (
+                $user->society_id !== $authUser->society_id
+                || $user->isSuperAdmin()
+            )
+        ) {
+            abort(403, 'Unauthorized access to this user.');
+        }
+    }
+
+    private function availableRolesFor(User $user)
+    {
+        $query = Role::query();
+
+        if ($user->isSocietyAdmin()) {
+            $query->whereIn('slug', ['resident', 'staff']);
+        }
+
+        return $query;
+    }
+
+    private function availableSocietiesFor(User $user)
+    {
+        $query = Society::active()->orderBy('name');
+
+        if ($user->isSocietyAdmin()) {
+            $query->whereKey($user->society_id);
+        }
+
+        return $query;
     }
 }

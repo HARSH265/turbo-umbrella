@@ -173,6 +173,10 @@ class NoticeController extends Controller
      */
     public function edit(Notice $notice)
     {
+        if (!$this->canAccessNotice($notice)) {
+            abort(403);
+        }
+
         $notice->load('recipients');
         $user = Auth::user();
         $societies = $user->isSuperAdmin()
@@ -193,6 +197,10 @@ class NoticeController extends Controller
      */
     public function update(UpdateNoticeRequest $request, Notice $notice)
     {
+        if (!$this->canAccessNotice($notice)) {
+            abort(403);
+        }
+
         DB::beginTransaction();
         try {
             $user = Auth::user();
@@ -246,6 +254,10 @@ class NoticeController extends Controller
      */
     public function destroy(Notice $notice)
     {
+        if (!$this->canAccessNotice($notice)) {
+            abort(403);
+        }
+
         try {
             $this->activityLog->logDelete('notice', $notice->id, $notice->toArray());
             $notice->delete();

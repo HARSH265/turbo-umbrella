@@ -31,6 +31,11 @@ class TowerController extends Controller
     public function index(Request $request)
     {
         $query = Tower::with(['society', 'creator']);
+        $user = Auth::user();
+
+        if ($user->isSocietyAdmin()) {
+            $query->where('society_id', $user->society_id);
+        }
 
         if ($request->filled('society_id')) {
             $query->where('society_id', $request->society_id);
@@ -41,19 +46,21 @@ class TowerController extends Controller
         }
 
         $towers = $query->latest()->paginate(20)->withQueryString();
-        $societies = Society::active()->get();
+        $societies = $this->availableSocietiesFor($user)->get();
 
         return view('towers.index', compact('towers', 'societies'));
     }
 
     public function create()
     {
-        $societies = Society::active()->get();
+        $societies = $this->availableSocietiesFor(Auth::user())->get();
         return view('towers.create', compact('societies'));
     }
 
     public function store(Request $request)
     {
+        $this->authorizeSocietySelection((int) $request->input('society_id'));
+
         $request->validate([
             'society_id' => 'required|exists:societies,id',
             'name' => 'required|string|max:255',
@@ -87,6 +94,8 @@ class TowerController extends Controller
 
     public function show(Tower $tower)
     {
+        $this->authorizeTowerAccess($tower);
+
         $tower->load(['society', 'flats']);
         
         $stats = [
@@ -100,12 +109,16 @@ class TowerController extends Controller
 
     public function edit(Tower $tower)
     {
-        $societies = Society::active()->get();
+        $this->authorizeTowerAccess($tower);
+        $societies = $this->availableSocietiesFor(Auth::user())->get();
         return view('towers.edit', compact('tower', 'societies'));
     }
 
     public function update(Request $request, Tower $tower)
     {
+        $this->authorizeTowerAccess($tower);
+        $this->authorizeSocietySelection((int) $request->input('society_id'));
+
         $request->validate([
             'society_id' => 'required|exists:societies,id',
             'name' => 'required|string|max:255',
@@ -141,6 +154,8 @@ class TowerController extends Controller
 
     public function destroy(Tower $tower)
     {
+        $this->authorizeTowerAccess($tower);
+
         if ($tower->flats()->exists()) {
             return back()->withErrors(['error' => 'Cannot delete tower with existing flats.']);
         }
@@ -156,5 +171,34 @@ class TowerController extends Controller
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Failed to delete tower.']);
         }
+    }
+
+    private function authorizeTowerAccess(Tower $tower): void
+    {
+        $user = Auth::user();
+
+        if ($user->isSocietyAdmin() && $tower->society_id !== $user->society_id) {
+            abort(403, 'Unauthorized access to this tower.');
+        }
+    }
+
+    private function authorizeSocietySelection(int $societyId): void
+    {
+        $user = Auth::user();
+
+        if ($user->isSocietyAdmin() && $societyId !== (int) $user->society_id) {
+            abort(403, 'Unauthorized society selection.');
+        }
+    }
+
+    private function availableSocietiesFor($user)
+    {
+        $query = Society::active();
+
+        if ($user->isSocietyAdmin()) {
+            $query->whereKey($user->society_id);
+        }
+
+        return $query;
     }
 }

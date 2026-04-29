@@ -38,6 +38,24 @@
                         @endforeach
                     </select>
                 </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Society</label>
+                    <select name="society_id" class="w-full border-gray-300 rounded-lg" @if(auth()->user()->isSocietyAdmin()) disabled @endif>
+                        <option value="">No society</option>
+                        @foreach($societies as $society)
+                            <option value="{{ $society->id }}" {{ old('society_id', auth()->user()->isSocietyAdmin() ? auth()->user()->society_id : $user->society_id) == $society->id ? 'selected' : '' }}>
+                                {{ $society->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @if(auth()->user()->isSocietyAdmin())
+                        <input type="hidden" name="society_id" value="{{ auth()->user()->society_id }}">
+                    @endif
+                    @error('society_id')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">

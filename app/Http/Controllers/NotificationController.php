@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 /**
  * app/Http/Controllers/NotificationController.php
@@ -60,7 +61,7 @@ class NotificationController extends Controller
 
         $url = data_get($notification->data, 'url');
 
-        if (filled($url)) {
+        if ($this->isSafeNotificationUrl($url)) {
             return redirect($url);
         }
 
@@ -105,5 +106,20 @@ class NotificationController extends Controller
         return response()->json([
             'count' => $this->notificationService->unreadCount(Auth::user()),
         ]);
+    }
+
+    private function isSafeNotificationUrl(mixed $url): bool
+    {
+        if (!is_string($url) || blank($url)) {
+            return false;
+        }
+
+        if (Str::startsWith($url, '/')) {
+            return true;
+        }
+
+        $appUrl = rtrim((string) config('app.url'), '/');
+
+        return $appUrl !== '' && Str::startsWith($url, $appUrl . '/');
     }
 }

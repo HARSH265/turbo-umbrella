@@ -37,6 +37,13 @@ class FlatController extends Controller
     public function index(Request $request)
     {
         $query = Flat::with(['tower.society']);
+        $user = Auth::user();
+
+        if ($user->isSocietyAdmin()) {
+            $query->whereHas('tower', function ($towerQuery) use ($user) {
+                $towerQuery->where('society_id', $user->society_id);
+            });
+        }
 
         // Filter by tower
         if ($request->filled('tower_id')) {
@@ -59,7 +66,7 @@ class FlatController extends Controller
         }
 
         $flats = $query->paginate(50)->withQueryString();
-        $towers = Tower::with('society')->active()->get();
+        $towers = $this->availableTowersFor($user)->get();
 
         // Load primary residents separately
         $flats->load(['activeResidents' => function ($query) {
@@ -74,7 +81,7 @@ class FlatController extends Controller
      */
     public function create()
     {
-        $towers = Tower::with('society')->active()->get();
+        $towers = $this->availableTowersFor(Auth::user())->get();
 
         return view('flats.create', compact('towers'));
     }
@@ -84,6 +91,8 @@ class FlatController extends Controller
      */
     public function store(StoreFlatRequest $request)
     {
+        $this->authorizeTowerSelection((int) $request->input('tower_id'));
+
         DB::beginTransaction();
         try {
             $data = $request->validated();
@@ -111,6 +120,8 @@ class FlatController extends Controller
      */
     public function show(Flat $flat)
 {
+    $this->authorizeFlatAccess($flat);
+
     $flat->load([
         'tower.society',
         'activeResidents',
@@ -129,7 +140,8 @@ class FlatController extends Controller
      */
     public function edit(Flat $flat)
     {
-        $towers = Tower::with('society')->active()->get();
+        $this->authorizeFlatAccess($flat);
+        $towers = $this->availableTowersFor(Auth::user())->get();
 
         return view('flats.edit', compact('flat', 'towers'));
     }
@@ -139,6 +151,9 @@ class FlatController extends Controller
      */
     public function update(UpdateFlatRequest $request, Flat $flat)
     {
+        $this->authorizeFlatAccess($flat);
+        $this->authorizeTowerSelection((int) $request->input('tower_id'));
+
         DB::beginTransaction();
         try {
             $oldData = $flat->toArray();
@@ -167,8 +182,14 @@ class FlatController extends Controller
      */
     public function assignResidents(Flat $flat)
     {
+        $this->authorizeFlatAccess($flat);
         $flat->load('activeResidents');
-        $availableUsers = User::withRole('resident')->active()->get();
+        $availableUsers = User::withRole('resident')
+            ->active()
+            ->when(Auth::user()->isSocietyAdmin(), function ($query) {
+                $query->where('society_id', Auth::user()->society_id);
+            })
+            ->get();
 
         return view('flats.assign-residents', compact('flat', 'availableUsers'));
     }
@@ -178,6 +199,8 @@ class FlatController extends Controller
      */
     public function storeResidentAssignment(Request $request, Flat $flat)
     {
+        $this->authorizeFlatAccess($flat);
+
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'relation_type' => 'required|in:owner,tenant,family_member',
@@ -188,6 +211,26 @@ class FlatController extends Controller
 
         DB::beginTransaction();
         try {
+            $resident = User::withRole('resident')->active()->findOrFail($request->user_id);
+
+            if (
+                Auth::user()->isSocietyAdmin()
+                && $resident->society_id !== Auth::user()->society_id
+            ) {
+                abort(403, 'Unauthorized resident selection.');
+            }
+
+            $alreadyAssigned = $flat->residents()
+                ->where('users.id', $resident->id)
+                ->wherePivot('is_active', true)
+                ->exists();
+
+            if ($alreadyAssigned) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['user_id' => 'This resident is already assigned to the flat.']);
+            }
+
             // If setting as primary, remove primary flag from others
             if ($request->boolean('is_primary')) {
                 $flat->residents()->updateExistingPivot(
@@ -227,6 +270,8 @@ class FlatController extends Controller
      */
     public function removeResident(Request $request, Flat $flat, User $user)
     {
+        $this->authorizeFlatAccess($flat);
+
         DB::beginTransaction();
         try {
             $flat->residents()->updateExistingPivot($user->id, [
@@ -253,6 +298,8 @@ class FlatController extends Controller
      */
     public function destroy(Flat $flat)
     {
+        $this->authorizeFlatAccess($flat);
+
         // Check if flat has active residents
         if ($flat->activeResidents()->exists()) {
             return back()->withErrors(['error' => 'Cannot delete flat with active residents.']);
@@ -273,5 +320,42 @@ class FlatController extends Controller
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Failed to delete flat.']);
         }
+    }
+
+    private function authorizeFlatAccess(Flat $flat): void
+    {
+        $user = Auth::user();
+
+        if ($user->isSocietyAdmin() && $flat->tower?->society_id !== $user->society_id) {
+            abort(403, 'Unauthorized access to this flat.');
+        }
+    }
+
+    private function authorizeTowerSelection(int $towerId): void
+    {
+        $user = Auth::user();
+
+        if (!$user->isSocietyAdmin()) {
+            return;
+        }
+
+        $allowed = Tower::whereKey($towerId)
+            ->where('society_id', $user->society_id)
+            ->exists();
+
+        if (!$allowed) {
+            abort(403, 'Unauthorized tower selection.');
+        }
+    }
+
+    private function availableTowersFor(User $user)
+    {
+        $query = Tower::with('society')->active();
+
+        if ($user->isSocietyAdmin()) {
+            $query->where('society_id', $user->society_id);
+        }
+
+        return $query;
     }
 }

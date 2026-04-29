@@ -32,11 +32,6 @@ class FilePolicy
      */
     public function download(User $user, File $file): bool
     {
-        // Society admin can access all files in their society scope
-        if ($user->isSocietyAdmin()) {
-            return true;
-        }
-
         // Module-specific access rules
         return match ($file->module) {
 
@@ -57,8 +52,7 @@ class FilePolicy
      */
     public function delete(User $user, File $file): bool
     {
-        // Society admin can delete files in their society
-        if ($user->isSocietyAdmin()) {
+        if ($user->isSocietyAdmin() && $this->belongsToUsersSociety($user, $file)) {
             return true;
         }
 
@@ -80,8 +74,23 @@ class FilePolicy
             return false;
         }
 
-        // Resident can access notice files if notice is published
-        return $notice->status->value === 'published';
+        if ($user->isSocietyAdmin()) {
+            return $notice->society_id === $user->society_id;
+        }
+
+        if ($user->isResident()) {
+            if ($notice->society_id !== $user->society_id) {
+                return false;
+            }
+
+            if ($notice->visibility === 'all') {
+                return true;
+            }
+
+            return $notice->recipients()->where('user_id', $user->id)->exists();
+        }
+
+        return false;
     }
 
     private function canAccessComplaintFile(User $user, File $file): bool
@@ -92,19 +101,55 @@ class FilePolicy
             return false;
         }
 
+        if ($user->isSocietyAdmin()) {
+            return $complaint->flat?->tower?->society_id === $user->society_id;
+        }
+
         return $complaint->user_id === $user->id
             || $complaint->assigned_to === $user->id;
     }
 
     private function canAccessMaintenanceFile(User $user, File $file): bool
     {
-        // Resident can access their own maintenance files
         $maintenance = \App\Models\Maintenance::find($file->entity_id);
 
         if (!$maintenance) {
             return false;
         }
 
-        return $maintenance->flat?->resident_id === $user->id;
+        if ($user->isSocietyAdmin()) {
+            return $maintenance->flat?->tower?->society_id === $user->society_id;
+        }
+
+        if (!$user->isResident()) {
+            return false;
+        }
+
+        return $user->activeFlats()
+            ->where('flats.id', $maintenance->flat_id)
+            ->exists();
+    }
+
+    private function belongsToUsersSociety(User $user, File $file): bool
+    {
+        return match ($file->module) {
+            'notices' => \App\Models\Notice::whereKey($file->entity_id)
+                ->where('society_id', $user->society_id)
+                ->exists(),
+            'complaints' => \App\Models\Complaint::whereKey($file->entity_id)
+                ->whereHas('flat.tower', function ($query) use ($user) {
+                    $query->where('society_id', $user->society_id);
+                })
+                ->exists(),
+            'maintenance' => \App\Models\Maintenance::whereKey($file->entity_id)
+                ->whereHas('flat.tower', function ($query) use ($user) {
+                    $query->where('society_id', $user->society_id);
+                })
+                ->exists(),
+            'users' => \App\Models\User::whereKey($file->entity_id)
+                ->where('society_id', $user->society_id)
+                ->exists(),
+            default => false,
+        };
     }
 }

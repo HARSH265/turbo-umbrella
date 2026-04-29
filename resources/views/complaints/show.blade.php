@@ -99,60 +99,72 @@
                 @endif
 
                 <!-- Comments Section -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Conversation Thread</h3>
+                <div class="bg-white rounded-2xl border border-brand-100 shadow-sm p-6">
+                    <div class="mb-4 flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-brand-900">Conversation Thread</h3>
+                        <span class="text-[11px] font-bold uppercase tracking-widest text-brand-400">
+                            {{ $complaint->comments->count() }} Updates
+                        </span>
+                    </div>
 
                     <div class="mb-6 max-h-[28rem] space-y-4 overflow-y-auto pr-2">
                         @forelse($complaint->comments as $comment)
                             @if (!$comment->is_internal || auth()->user()->isStaff() || auth()->user()->isSocietyAdmin())
                                 <div
-                                    class="border-l-4 {{ $comment->is_internal ? 'border-yellow-400 bg-yellow-50' : 'border-blue-400 bg-blue-50' }} p-4 rounded">
-                                    <div class="flex items-start justify-between mb-1">
-                                        <div class="flex items-center space-x-2">
-                                            <span class="font-bold text-gray-900">{{ $comment->user->name }}</span>
+                                    class="rounded-2xl border p-4 shadow-sm {{ $comment->is_internal ? 'border-amber-200 bg-amber-50/70' : 'border-brand-100 bg-brand-50/50' }}">
+                                    <div class="mb-2 flex items-start justify-between gap-4">
+                                        <div class="min-w-0">
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-bold text-brand-900">{{ $comment->user->name }}</span>
+                                                <span class="text-[11px] font-medium uppercase tracking-wide text-brand-400">
+                                                    {{ $comment->is_internal ? 'Team Update' : 'Resident Visible' }}
+                                                </span>
+                                            </div>
                                             @if ($comment->is_internal)
                                                 <span
-                                                    class="px-2 py-0.5 text-xxs bg-yellow-200 text-yellow-800 rounded uppercase font-bold">Internal
+                                                    class="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-amber-700">Internal
                                                     Note</span>
                                             @endif
                                         </div>
                                         <span
-                                            class="text-xs text-gray-500">{{ $comment->created_at->diffForHumans() }}</span>
+                                            class="shrink-0 text-xs font-medium text-brand-400">{{ $comment->created_at->diffForHumans() }}</span>
                                     </div>
-                                    <p class="text-gray-700 text-sm leading-relaxed">{{ $comment->comment }}</p>
+                                    <p class="text-sm leading-7 text-brand-700 whitespace-pre-line">{{ $comment->comment }}</p>
                                 </div>
                             @endif
                         @empty
-                            <div class="text-center py-6 text-gray-500 italic">No communication history yet.</div>
+                            <div class="rounded-2xl border border-dashed border-brand-200 bg-brand-50/40 px-6 py-8 text-center">
+                                <p class="text-sm font-medium italic text-brand-500">No communication history yet.</p>
+                            </div>
                         @endforelse
                     </div>
 
                     <!-- Add Comment Form -->
                     @if ($complaint->status->value !== 'closed' || auth()->user()->isSuperAdmin())
-                        <form method="POST" action="{{ route('complaints.comment', $complaint) }}" class="border-t pt-4">
+                        <form method="POST" action="{{ route('complaints.comment', $complaint) }}" class="border-t border-brand-100 pt-4">
                             @csrf
-                            <textarea name="comment" rows="3" required placeholder="Write your message here..."
-                                class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 mb-3"></textarea>
+                            <x-input-label for="comment" value="Add Update" class="mb-2 text-xs font-bold uppercase tracking-widest text-brand-500" />
+                            <textarea id="comment" name="comment" rows="4" required placeholder="Write your message here..."
+                                class="mb-3 w-full rounded-xl border-brand-200 text-sm text-brand-800 placeholder:text-brand-300 focus:border-brand-500 focus:ring-brand-500/10"></textarea>
 
                             <div class="flex flex-wrap items-center justify-between gap-4">
                                 <div class="flex items-center space-x-4">
                                     @if (!auth()->user()->isResident())
-                                        <label class="flex items-center">
+                                        <label class="flex items-center rounded-full border border-brand-200 bg-brand-50 px-3 py-2">
                                             <input type="checkbox" name="is_internal" value="1"
-                                                class="rounded border-gray-300">
-                                            <span class="ml-2 text-sm text-gray-600">Internal Note</span>
+                                                class="rounded border-brand-300 text-amber-600 focus:ring-amber-500/20">
+                                            <span class="ml-2 text-xs font-bold uppercase tracking-wide text-brand-600">Internal Note</span>
                                         </label>
                                     @endif
                                 </div>
-                                <button type="submit"
-                                    class="px-6 py-2 bg-gray-900 text-white text-sm font-bold rounded-lg hover:bg-gray-800 transition">
+                                <x-primary-button class="rounded-xl px-6 py-3 text-[11px] font-black">
                                     Post Update
-                                </button>
+                                </x-primary-button>
                             </div>
                         </form>
                     @else
-                        <div class="bg-gray-100 p-4 rounded-lg border text-center">
-                            <p class="text-sm text-gray-500 font-medium italic">This ticket is Closed. New comments are
+                        <div class="rounded-2xl border border-brand-200 bg-brand-50/50 p-4 text-center">
+                            <p class="text-sm font-medium italic text-brand-500">This ticket is Closed. New comments are
                                 disabled.</p>
                         </div>
                     @endif
@@ -199,7 +211,7 @@
                                 @csrf
                                 <select name="assigned_to" required class="w-full border-gray-300 rounded-lg text-sm mb-2">
                                     <option value="">Choose Staff...</option>
-                                    @foreach (\App\Models\User::withRole('staff')->active()->get() as $staff)
+                                    @foreach ($assignableStaff as $staff)
                                         <option value="{{ $staff->id }}"
                                             {{ $complaint->assigned_to == $staff->id ? 'selected' : '' }}>
                                             {{ $staff->name }}

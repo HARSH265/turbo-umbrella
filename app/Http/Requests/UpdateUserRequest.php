@@ -20,6 +20,7 @@ class UpdateUserRequest extends FormRequest
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $userId,
             'phone' => 'required|string|regex:/^[0-9]{10}$/|unique:users,phone,' . $userId,
+            'society_id' => 'nullable|exists:societies,id',
             'role_id' => 'required|exists:roles,id',
             'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'password' => 'nullable|confirmed|min:8',

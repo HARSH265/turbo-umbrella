@@ -156,8 +156,9 @@ class ComplaintController extends Controller
         }
 
         $complaint->load(['user', 'flat.tower', 'assignedStaff', 'comments.user', 'files']);
+        $assignableStaff = $this->getAssignableStaff($complaint);
 
-        return view('complaints.show', compact('complaint'));
+        return view('complaints.show', compact('complaint', 'assignableStaff'));
     }
 
     /**
@@ -212,9 +213,14 @@ class ComplaintController extends Controller
             if ($request->filled('assign_to')) {
                 // Validate assignee is staff or admin
                 $assignee = User::findOrFail($request->assign_to);
+                $complaintSocietyId = $complaint->flat?->tower?->society_id;
 
                 if (!$assignee->isStaff() && !$assignee->isSocietyAdmin()) {
                     throw new \Exception('Can only assign to staff or admins.');
+                }
+
+                if ($complaintSocietyId && $assignee->society_id !== $complaintSocietyId) {
+                    throw new \Exception('Can only assign within the same society.');
                 }
 
                 // Assign complaint
@@ -397,5 +403,17 @@ class ComplaintController extends Controller
         return $user->isResident()
             && $complaint->user_id === $user->id
             && in_array($complaint->status->value, ['resolved', 'closed'], true);
+    }
+
+    private function getAssignableStaff(Complaint $complaint)
+    {
+        $societyId = $complaint->flat?->tower?->society_id;
+
+        return User::withRole('staff')
+            ->active()
+            ->when($societyId, function ($query) use ($societyId) {
+                $query->where('society_id', $societyId);
+            })
+            ->get();
     }
 }
