@@ -74,6 +74,10 @@ class Visitor extends Model
      */
     public function approve(int $userId): bool
     {
+        if ($this->approval_status !== 'pending') {
+            return false;
+        }
+
         return $this->update([
             'approval_status' => 'approved',
             'approved_by' => $userId,
@@ -90,6 +94,10 @@ class Visitor extends Model
      */
     public function reject(int $userId, ?string $remarks = null): bool
     {
+        if ($this->approval_status !== 'pending') {
+            return false;
+        }
+
         return $this->update([
             'approval_status' => 'rejected',
             'approved_by' => $userId,
@@ -105,6 +113,10 @@ class Visitor extends Model
      */
     public function recordExit(): bool
     {
+        if ($this->approval_status !== 'approved' || $this->exit_time !== null) {
+            return false;
+        }
+
         return $this->update(['exit_time' => now()]);
     }
 

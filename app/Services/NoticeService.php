@@ -99,9 +99,13 @@ class NoticeService
             $alreadyPublished = $notice->isPublished() && $notice->published_at !== null;
 
             if (!$alreadyPublished) {
+                $publishedAt = $notice->published_at ?? now();
+
                 $notice->forceFill([
                     'status' => NoticeStatus::PUBLISHED,
-                    'published_at' => $notice->published_at ?? now(),
+                    'published_at' => $publishedAt,
+                    'publish_date' => $publishedAt->toDateString(),
+                    'is_active' => true,
                 ])->save();
 
                 $this->dispatchPublishedNotifications($notice->fresh(['targetUser']));
@@ -279,11 +283,18 @@ class NoticeService
         }
 
         $expiresAt = $data['expires_at'] ?? null;
-        $publishDate = $data['published_at'] ?? now();
 
-        $data['publish_date'] = $publishDate instanceof \Carbon\CarbonInterface
-            ? $publishDate->toDateString()
-            : \Illuminate\Support\Carbon::parse($publishDate)->toDateString();
+        if ($status === NoticeStatus::PUBLISHED) {
+            $publishedAt = $data['published_at'] ?? now();
+
+            $data['published_at'] = $publishedAt instanceof \Carbon\CarbonInterface
+                ? $publishedAt
+                : \Illuminate\Support\Carbon::parse($publishedAt);
+
+            $data['publish_date'] = $data['published_at']->toDateString();
+        } else {
+            $data['publish_date'] = null;
+        }
 
         $data['expiry_date'] = $expiresAt
             ? (\Illuminate\Support\Carbon::parse($expiresAt))->toDateString()

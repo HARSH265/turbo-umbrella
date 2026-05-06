@@ -18,6 +18,11 @@ class File extends Model
 {
     use HasFactory, SoftDeletes;
 
+    private function disk()
+    {
+        return Storage::disk(config('files.default_disk', 'public'));
+    }
+
     protected $fillable = [
         'module',
         'entity_id',
@@ -57,7 +62,7 @@ class File extends Model
      */
     public function getFullPathAttribute(): string
     {
-        return Storage::path($this->path);
+        return $this->disk()->path($this->path);
     }
 
     /**
@@ -67,7 +72,7 @@ class File extends Model
      */
     public function getUrlAttribute(): ?string
     {
-        return Storage::exists($this->path) ? Storage::url($this->path) : null;
+        return $this->disk()->exists($this->path) ? $this->disk()->url($this->path) : null;
     }
 
     /**
@@ -96,8 +101,8 @@ class File extends Model
      */
     public function deleteFile(): bool
     {
-        if (Storage::exists($this->path)) {
-            Storage::delete($this->path);
+        if ($this->disk()->exists($this->path)) {
+            $this->disk()->delete($this->path);
         }
         
         return $this->delete();
@@ -110,7 +115,7 @@ class File extends Model
      */
     public function existsOnDisk(): bool
     {
-        return Storage::exists($this->path);
+        return $this->disk()->exists($this->path);
     }
 
     // Scopes

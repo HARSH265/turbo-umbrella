@@ -27,6 +27,13 @@ class VisitorController extends Controller
     public function index(Request $request)
     {
         $query = Visitor::with(['flat.tower', 'approver', 'creator']);
+        $user = Auth::user();
+
+        if ($user->isSocietyAdmin() || $user->isStaff()) {
+            $query->whereHas('flat.tower', function ($towerQuery) use ($user) {
+                $towerQuery->where('society_id', $user->society_id);
+            });
+        }
 
         // Filter by approval status
         if ($request->filled('approval_status')) {
@@ -39,8 +46,8 @@ class VisitorController extends Controller
         }
 
         // For residents, show only their flat's visitors
-        if (Auth::user()->isResident()) {
-            $flatIds = Auth::user()->activeFlats->pluck('id');
+        if ($user->isResident()) {
+            $flatIds = $user->activeFlats->pluck('id');
             $query->whereIn('flat_id', $flatIds);
         }
 
@@ -59,7 +66,17 @@ class VisitorController extends Controller
      */
     public function create()
     {
-        $flats = Flat::with('tower')->active()->occupied()->get();
+        $user = Auth::user();
+
+        $flats = Flat::with('tower')
+            ->active()
+            ->occupied()
+            ->when(!$user->isSuperAdmin(), function ($query) use ($user) {
+                $query->whereHas('tower', function ($towerQuery) use ($user) {
+                    $towerQuery->where('society_id', $user->society_id);
+                });
+            })
+            ->get();
 
         return view('visitors.create', compact('flats'));
     }
@@ -78,9 +95,15 @@ class VisitorController extends Controller
             'remarks' => 'nullable|string|max:500',
         ]);
 
+        $flat = Flat::with('tower')->findOrFail($request->integer('flat_id'));
+
+        if (!$this->canAccessFlat($flat)) {
+            abort(403);
+        }
+
         try {
             $visitor = Visitor::create([
-                'flat_id' => $request->flat_id,
+                'flat_id' => $flat->id,
                 'name' => $request->name,
                 'phone' => $request->phone,
                 'purpose' => $request->purpose,
@@ -125,7 +148,9 @@ class VisitorController extends Controller
         }
 
         try {
-            $visitor->approve(Auth::id());
+            if (!$visitor->approve(Auth::id())) {
+                return back()->withErrors(['error' => 'Only pending visitors can be approved.']);
+            }
 
             return back()->with('success', 'Visitor approved successfully.');
 
@@ -149,7 +174,9 @@ class VisitorController extends Controller
         }
 
         try {
-            $visitor->reject(Auth::id(), $request->remarks);
+            if (!$visitor->reject(Auth::id(), $request->remarks)) {
+                return back()->withErrors(['error' => 'Only pending visitors can be rejected.']);
+            }
 
             return back()->with('success', 'Visitor rejected.');
 
@@ -168,7 +195,9 @@ class VisitorController extends Controller
         }
 
         try {
-            $visitor->recordExit();
+            if (!$visitor->recordExit()) {
+                return back()->withErrors(['error' => 'Exit can only be recorded once for an approved visitor.']);
+            }
 
             return back()->with('success', 'Exit time recorded.');
 
@@ -184,8 +213,15 @@ class VisitorController extends Controller
     {
         $user = Auth::user();
 
-        // Admins can approve all
-        if ($user->isSuperAdmin() || $user->isSocietyAdmin()) {
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+
+        if (!$this->belongsToUsersSociety($user, $visitor)) {
+            return false;
+        }
+
+        if ($user->isSocietyAdmin()) {
             return true;
         }
 
@@ -203,6 +239,14 @@ class VisitorController extends Controller
     private function canView(Visitor $visitor): bool
     {
         $user = Auth::user();
+
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+
+        if (!$this->belongsToUsersSociety($user, $visitor)) {
+            return false;
+        }
 
         if ($user->hasPermission('visitors.view')) {
             return true;
@@ -222,6 +266,14 @@ class VisitorController extends Controller
     {
         $user = Auth::user();
 
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+
+        if (!$this->belongsToUsersSociety($user, $visitor)) {
+            return false;
+        }
+
         if ($user->hasPermission('visitors.update') && !$user->isResident()) {
             return true;
         }
@@ -231,5 +283,21 @@ class VisitorController extends Controller
         }
 
         return false;
+    }
+
+    private function canAccessFlat(Flat $flat): bool
+    {
+        $user = Auth::user();
+
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+
+        return $flat->tower?->society_id === $user->society_id;
+    }
+
+    private function belongsToUsersSociety($user, Visitor $visitor): bool
+    {
+        return $visitor->flat?->tower?->society_id === $user->society_id;
     }
 }

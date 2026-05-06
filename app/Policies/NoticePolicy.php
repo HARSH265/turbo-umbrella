@@ -30,7 +30,7 @@ class NoticePolicy
     public function view(User $user, Notice $notice): bool
     {
         if ($user->isSocietyAdmin()) {
-            return $this->belongsToUsersSociety($user, $notice);
+            return $notice->isGlobal() || $this->belongsToUsersSociety($user, $notice);
         }
 
         if ($notice->isArchived()) {

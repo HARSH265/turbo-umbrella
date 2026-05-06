@@ -36,7 +36,9 @@ class NotificationController extends Controller
      */
     public function markAsRead(string $id)
     {
-        $this->notificationService->markAsRead(Auth::user(), $id);
+        if (!$this->notificationService->markAsRead(Auth::user(), $id)) {
+            return back()->withErrors(['error' => 'Notification not found.']);
+        }
 
         return back()->with('success', 'Notification marked as read.');
     }
@@ -83,7 +85,9 @@ class NotificationController extends Controller
      */
     public function destroy(string $id)
     {
-        $this->notificationService->deleteNotification(Auth::user(), $id);
+        if (!$this->notificationService->deleteNotification(Auth::user(), $id)) {
+            return back()->withErrors(['error' => 'Notification not found.']);
+        }
 
         return back()->with('success', 'Notification deleted.');
     }

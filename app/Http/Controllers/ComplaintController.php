@@ -402,7 +402,7 @@ class ComplaintController extends Controller
 
         return $user->isResident()
             && $complaint->user_id === $user->id
-            && in_array($complaint->status->value, ['resolved', 'closed'], true);
+            && $complaint->status->value === 'resolved';
     }
 
     private function getAssignableStaff(Complaint $complaint)

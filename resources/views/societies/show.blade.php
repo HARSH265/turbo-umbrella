@@ -104,7 +104,7 @@
             @foreach($society->notices as $notice)
             <div class="border-l-4 border-blue-500 pl-4 py-2">
                 <p class="font-medium text-gray-900">{{ $notice->title }}</p>
-                <p class="text-sm text-gray-600">{{ $notice->publish_date->format('d M Y') }}</p>
+                <p class="text-sm text-gray-600">{{ optional($notice->publish_date)->format('d M Y') ?? 'Not published yet' }}</p>
             </div>
             @endforeach
         </div>

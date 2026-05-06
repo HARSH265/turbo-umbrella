@@ -90,6 +90,8 @@ class UserController extends Controller
     public function store(StoreUserRequest $request)
     {
         DB::beginTransaction();
+        $uploadedFileId = null;
+
         try {
             $authUser = Auth::user();
             $data = $request->validated();
@@ -101,21 +103,17 @@ class UserController extends Controller
                 $data['society_id'] = $authUser->society_id;
             }
 
-            // Handle profile photo upload
+            $user = User::create($data);
+
+            // Upload profile photo only after the user exists.
             if ($request->hasFile('profile_photo')) {
                 $file = $this->fileService->upload(
                     $request->file('profile_photo'),
                     'users',
-                    0 // Temporary, will update after user creation
+                    $user->id
                 );
-                $data['profile_photo'] = $file->path;
-            }
-
-            $user = User::create($data);
-
-            // Update file entity_id if photo was uploaded
-            if (isset($file)) {
-                $file->update(['entity_id' => $user->id]);
+                $uploadedFileId = $file->id;
+                $user->update(['profile_photo' => $file->path]);
             }
 
             // Assign role
@@ -131,6 +129,14 @@ class UserController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
+            if ($uploadedFileId !== null) {
+                try {
+                    $this->fileService->delete($uploadedFileId, true);
+                } catch (\Exception $cleanupException) {
+                }
+            }
+
             return back()
                 ->withInput()
                 ->withErrors(['error' => 'Failed to create user: ' . $e->getMessage()]);
@@ -179,6 +185,8 @@ class UserController extends Controller
         ]);
 
         DB::beginTransaction();
+        $uploadedFileId = null;
+        $oldFileId = null;
         try {
             $oldData = $user->toArray();
             $role = $this->availableRolesFor(Auth::user())->findOrFail($request->role_id);
@@ -197,12 +205,8 @@ class UserController extends Controller
 
             // Handle profile photo upload
             if ($request->hasFile('profile_photo')) {
-                // Delete old photo
                 if ($user->profile_photo) {
-                    $oldFile = \App\Models\File::where('path', $user->profile_photo)->first();
-                    if ($oldFile) {
-                        $this->fileService->delete($oldFile->id, true);
-                    }
+                    $oldFileId = \App\Models\File::where('path', $user->profile_photo)->value('id');
                 }
 
                 $file = $this->fileService->upload(
@@ -210,6 +214,7 @@ class UserController extends Controller
                     'users',
                     $user->id
                 );
+                $uploadedFileId = $file->id;
                 $data['profile_photo'] = $file->path;
             }
 
@@ -222,12 +227,29 @@ class UserController extends Controller
 
             DB::commit();
 
+            if ($oldFileId !== null) {
+                DB::afterCommit(function () use ($oldFileId) {
+                    try {
+                        $this->fileService->delete($oldFileId, true);
+                    } catch (\Exception $cleanupException) {
+                    }
+                });
+            }
+
             return redirect()
                 ->route('users.show', $user)
                 ->with('success', 'User updated successfully.');
 
         } catch (\Exception $e) {
             DB::rollBack();
+
+            if ($uploadedFileId !== null) {
+                try {
+                    $this->fileService->delete($uploadedFileId, true);
+                } catch (\Exception $cleanupException) {
+                }
+            }
+
             return back()
                 ->withInput()
                 ->withErrors(['error' => 'Failed to update user.']);

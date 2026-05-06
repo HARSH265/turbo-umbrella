@@ -239,6 +239,10 @@ class ComplaintService
         $complaint = Complaint::findOrFail($complaintId);
         $oldData = $complaint->toArray();
 
+        if ($complaint->status !== ComplaintStatus::RESOLVED) {
+            throw new \InvalidArgumentException('Only resolved complaints can be disputed.');
+        }
+
         return DB::transaction(function () use ($complaint, $oldData, $reason, $files) {
             $result = $complaint->update([
                 'status' => ComplaintStatus::DISPUTED,
