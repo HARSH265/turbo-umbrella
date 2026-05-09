@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -178,5 +179,15 @@ class Flat extends Model
     public function scopeVacant($query)
     {
         return $query->where('occupancy_status', 'vacant');
+    }
+
+    /**
+     * Scope to get flats for a society
+     */
+    public function scopeForSociety(Builder $query, int $societyId): Builder
+    {
+        return $query->whereHas('tower', function (Builder $towerQuery) use ($societyId) {
+            $towerQuery->where('society_id', $societyId);
+        });
     }
 }

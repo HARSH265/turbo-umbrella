@@ -206,6 +206,7 @@
                         <h3 class="text-sm font-bold text-gray-900 uppercase mb-4">Management</h3>
 
                         @if ($complaint->status->value !== 'resolved' && $complaint->status->value !== 'closed')
+                            @if (auth()->user()->hasPermission('complaints.assign'))
                             <!-- Assign Form -->
                             <form method="POST" action="{{ route('complaints.assign', $complaint) }}" class="mb-4">
                                 @csrf
@@ -223,27 +224,30 @@
                                     Update Assignee
                                 </button>
                             </form>
+                            @endif
 
+                            @if (auth()->user()->hasPermission('complaints.update'))
                             <!-- Manual Status Update -->
                             <form method="POST" action="{{ route('complaints.status', $complaint) }}" class="mb-4">
                                 @csrf
                                 <select name="status" class="w-full border-gray-300 rounded-lg text-sm mb-2">
-                                    @foreach (\App\Enums\ComplaintStatus::cases() as $status)
-                                        <option value="{{ $status->value }}"
-                                            {{ $complaint->status == $status ? 'selected' : '' }}>
-                                            {{ ucfirst($status->value) }}
-                                        </option>
-                                    @endforeach
+                                    <option value="open" {{ $complaint->status->value === 'open' ? 'selected' : '' }}>
+                                        Open
+                                    </option>
+                                    <option value="in_progress" {{ $complaint->status->value === 'in_progress' ? 'selected' : '' }}>
+                                        In progress
+                                    </option>
                                 </select>
                                 <button type="submit"
                                     class="w-full py-2 bg-gray-800 text-white text-xs font-bold rounded-lg hover:bg-gray-900 uppercase">
                                     Change Status
                                 </button>
                             </form>
+                            @endif
                         @endif
 
                         <!-- Resolve Button -->
-                        @if ($complaint->status->value === 'in_progress' || $complaint->status->value === 'disputed')
+                        @if (auth()->user()->hasPermission('complaints.update') && ($complaint->status->value === 'in_progress' || $complaint->status->value === 'disputed'))
                             <button onclick="document.getElementById('resolveModal').classList.remove('hidden')"
                                 class="w-full py-3 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700 shadow-lg transition">
                                 Mark as Resolved
@@ -265,7 +269,7 @@
                 @endif
 
                 <!-- Resident Dispute Action -->
-                @if (auth()->id() === $complaint->user_id && in_array($complaint->status->value, ['resolved', 'closed']))
+                @if (auth()->id() === $complaint->user_id && $complaint->status->value === 'resolved')
                     <div class="bg-red-50 border border-red-200 rounded-lg p-5 text-center shadow-sm">
                         <p class="text-xs text-red-600 font-bold uppercase mb-3">Issue still exists?</p>
                         <button onclick="document.getElementById('disputeModal').classList.remove('hidden')"

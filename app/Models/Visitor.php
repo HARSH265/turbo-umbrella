@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use DomainException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -74,9 +76,7 @@ class Visitor extends Model
      */
     public function approve(int $userId): bool
     {
-        if ($this->approval_status !== 'pending') {
-            return false;
-        }
+        $this->guardCanApprove();
 
         return $this->update([
             'approval_status' => 'approved',
@@ -94,9 +94,7 @@ class Visitor extends Model
      */
     public function reject(int $userId, ?string $remarks = null): bool
     {
-        if ($this->approval_status !== 'pending') {
-            return false;
-        }
+        $this->guardCanReject();
 
         return $this->update([
             'approval_status' => 'rejected',
@@ -113,9 +111,7 @@ class Visitor extends Model
      */
     public function recordExit(): bool
     {
-        if ($this->approval_status !== 'approved' || $this->exit_time !== null) {
-            return false;
-        }
+        $this->guardCanRecordExit();
 
         return $this->update(['exit_time' => now()]);
     }
@@ -128,6 +124,58 @@ class Visitor extends Model
     public function isInside(): bool
     {
         return $this->entry_time && !$this->exit_time;
+    }
+
+    /**
+     * Check if visitor belongs to a given society
+     */
+    public function belongsToSociety(?int $societyId): bool
+    {
+        return $societyId !== null && $this->flat?->tower?->society_id === $societyId;
+    }
+
+    /**
+     * Check if visitor belongs to one of the given flats
+     */
+    public function belongsToFlatIds(iterable $flatIds): bool
+    {
+        $flatIds = is_array($flatIds) ? $flatIds : iterator_to_array($flatIds, false);
+
+        return in_array($this->flat_id, $flatIds, true);
+    }
+
+    /**
+     * Guard valid approval transition
+     */
+    public function guardCanApprove(): void
+    {
+        if ($this->approval_status !== 'pending') {
+            throw new DomainException('Only pending visitors can be approved.');
+        }
+    }
+
+    /**
+     * Guard valid rejection transition
+     */
+    public function guardCanReject(): void
+    {
+        if ($this->approval_status !== 'pending') {
+            throw new DomainException('Only pending visitors can be rejected.');
+        }
+    }
+
+    /**
+     * Guard valid exit transition
+     */
+    public function guardCanRecordExit(): void
+    {
+        if ($this->approval_status !== 'approved') {
+            throw new DomainException('Exit can only be recorded for an approved visitor.');
+        }
+
+        if ($this->exit_time !== null) {
+            throw new DomainException('Exit can only be recorded once for an approved visitor.');
+        }
     }
 
     // Scopes
@@ -162,6 +210,26 @@ class Visitor extends Model
     public function scopeToday($query)
     {
         return $query->whereDate('entry_time', now());
+    }
+
+    /**
+     * Scope to get visitors for a society
+     */
+    public function scopeForSociety(Builder $query, int $societyId): Builder
+    {
+        return $query->whereHas('flat.tower', function (Builder $towerQuery) use ($societyId) {
+            $towerQuery->where('society_id', $societyId);
+        });
+    }
+
+    /**
+     * Scope to get visitors for selected flats
+     */
+    public function scopeForFlatIds(Builder $query, iterable $flatIds): Builder
+    {
+        $flatIds = is_array($flatIds) ? $flatIds : iterator_to_array($flatIds, false);
+
+        return $query->whereIn('flat_id', $flatIds);
     }
 
 }

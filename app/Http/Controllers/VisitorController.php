@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Auth;
-use App\Models\Visitor;
+use App\Http\Requests\RejectVisitorRequest;
+use App\Http\Requests\StoreVisitorRequest;
 use App\Models\Flat;
+use App\Models\Visitor;
+use App\Services\VisitorAccessService;
+use DomainException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 
 /**
@@ -14,7 +18,7 @@ use Illuminate\Http\Request;
  */
 class VisitorController extends Controller
 {
-    public function __construct()
+    public function __construct(private VisitorAccessService $accessService)
     {
         $this->middleware('permission:visitors.view')->only(['index', 'show']);
         $this->middleware('permission:visitors.create')->only(['create', 'store']);
@@ -26,13 +30,13 @@ class VisitorController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Visitor::with(['flat.tower', 'approver', 'creator']);
         $user = Auth::user();
+        $query = Visitor::with(['flat.tower', 'approver', 'creator']);
 
-        if ($user->isSocietyAdmin() || $user->isStaff()) {
-            $query->whereHas('flat.tower', function ($towerQuery) use ($user) {
-                $towerQuery->where('society_id', $user->society_id);
-            });
+        if ($user->isResident()) {
+            $query->forFlatIds($this->activeFlatIdsFor($user));
+        } elseif (($user->isSocietyAdmin() || $user->isStaff()) && $user->society_id) {
+            $query->forSociety($user->society_id);
         }
 
         // Filter by approval status
@@ -45,10 +49,13 @@ class VisitorController extends Controller
             $query->whereDate('entry_time', $request->date);
         }
 
-        // For residents, show only their flat's visitors
-        if ($user->isResident()) {
-            $flatIds = $user->activeFlats->pluck('id');
-            $query->whereIn('flat_id', $flatIds);
+        // Filter by inside/exited state
+        if ($request->filled('inside')) {
+            if ($request->boolean('inside')) {
+                $query->currentlyInside();
+            } else {
+                $query->whereNotNull('exit_time');
+            }
         }
 
         // Show today's visitors by default
@@ -68,13 +75,11 @@ class VisitorController extends Controller
     {
         $user = Auth::user();
 
-        $flats = Flat::with('tower')
+        $flats = Flat::with('tower.society')
             ->active()
             ->occupied()
             ->when(!$user->isSuperAdmin(), function ($query) use ($user) {
-                $query->whereHas('tower', function ($towerQuery) use ($user) {
-                    $towerQuery->where('society_id', $user->society_id);
-                });
+                $query->forSociety($user->society_id);
             })
             ->get();
 
@@ -84,31 +89,24 @@ class VisitorController extends Controller
     /**
      * Register new visitor entry
      */
-    public function store(Request $request)
+    public function store(StoreVisitorRequest $request)
     {
-        $request->validate([
-            'flat_id' => 'required|exists:flats,id',
-            'name' => 'required|string|max:255',
-            'phone' => 'required|string|regex:/^[0-9]{10}$/',
-            'purpose' => 'required|string|max:255',
-            'entry_time' => 'required|date',
-            'remarks' => 'nullable|string|max:500',
-        ]);
+        $validated = $request->validated();
 
-        $flat = Flat::with('tower')->findOrFail($request->integer('flat_id'));
+        $flat = Flat::with('tower')->findOrFail((int) $validated['flat_id']);
 
-        if (!$this->canAccessFlat($flat)) {
+        if (!$this->accessService->canAccessFlat(Auth::user(), $flat)) {
             abort(403);
         }
 
         try {
             $visitor = Visitor::create([
                 'flat_id' => $flat->id,
-                'name' => $request->name,
-                'phone' => $request->phone,
-                'purpose' => $request->purpose,
-                'entry_time' => $request->entry_time,
-                'remarks' => $request->remarks,
+                'name' => $validated['name'],
+                'phone' => $validated['phone'],
+                'purpose' => $validated['purpose'],
+                'entry_time' => $validated['entry_time'],
+                'remarks' => $validated['remarks'] ?? null,
                 'created_by' => Auth::id(),
             ]);
 
@@ -128,13 +126,18 @@ class VisitorController extends Controller
      */
     public function show(Visitor $visitor)
     {
-        if (!$this->canView($visitor)) {
+        $user = Auth::user();
+
+        if (!$this->accessService->canView($user, $visitor)) {
             abort(403);
         }
 
         $visitor->load(['flat.tower', 'approver', 'creator']);
 
-        return view('visitors.show', compact('visitor'));
+        return view('visitors.show', array_merge(
+            ['visitor' => $visitor],
+            $this->accessService->actionFlags($user, $visitor)
+        ));
     }
 
     /**
@@ -143,17 +146,15 @@ class VisitorController extends Controller
     public function approve(Visitor $visitor)
     {
         // Check if user can approve (resident of the flat)
-        if (!$this->canApprove($visitor)) {
+        if (!$this->accessService->canApprove(Auth::user(), $visitor)) {
             abort(403);
         }
 
         try {
-            if (!$visitor->approve(Auth::id())) {
-                return back()->withErrors(['error' => 'Only pending visitors can be approved.']);
-            }
-
+            $visitor->approve(Auth::id());
             return back()->with('success', 'Visitor approved successfully.');
-
+        } catch (DomainException $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Failed to approve visitor.']);
         }
@@ -162,24 +163,20 @@ class VisitorController extends Controller
     /**
      * Reject visitor entry
      */
-    public function reject(Request $request, Visitor $visitor)
+    public function reject(RejectVisitorRequest $request, Visitor $visitor)
     {
-        $request->validate([
-            'remarks' => 'nullable|string|max:500',
-        ]);
+        $validated = $request->validated();
 
         // Check if user can reject
-        if (!$this->canApprove($visitor)) {
+        if (!$this->accessService->canReject(Auth::user(), $visitor)) {
             abort(403);
         }
 
         try {
-            if (!$visitor->reject(Auth::id(), $request->remarks)) {
-                return back()->withErrors(['error' => 'Only pending visitors can be rejected.']);
-            }
-
+            $visitor->reject(Auth::id(), $validated['remarks'] ?? null);
             return back()->with('success', 'Visitor rejected.');
-
+        } catch (DomainException $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Failed to reject visitor.']);
         }
@@ -190,114 +187,17 @@ class VisitorController extends Controller
      */
     public function recordExit(Visitor $visitor)
     {
-        if (!$this->canManage($visitor)) {
+        if (!$this->accessService->canManage(Auth::user(), $visitor)) {
             abort(403);
         }
 
         try {
-            if (!$visitor->recordExit()) {
-                return back()->withErrors(['error' => 'Exit can only be recorded once for an approved visitor.']);
-            }
-
+            $visitor->recordExit();
             return back()->with('success', 'Exit time recorded.');
-
+        } catch (DomainException $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Failed to record exit.']);
         }
-    }
-
-    /**
-     * Check if user can approve/reject visitor
-     */
-    private function canApprove(Visitor $visitor): bool
-    {
-        $user = Auth::user();
-
-        if ($user->isSuperAdmin()) {
-            return true;
-        }
-
-        if (!$this->belongsToUsersSociety($user, $visitor)) {
-            return false;
-        }
-
-        if ($user->isSocietyAdmin()) {
-            return true;
-        }
-
-        // Residents can approve for their flats
-        if ($user->isResident()) {
-            return $user->activeFlats->contains($visitor->flat_id);
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if user can view visitor details
-     */
-    private function canView(Visitor $visitor): bool
-    {
-        $user = Auth::user();
-
-        if ($user->isSuperAdmin()) {
-            return true;
-        }
-
-        if (!$this->belongsToUsersSociety($user, $visitor)) {
-            return false;
-        }
-
-        if ($user->hasPermission('visitors.view')) {
-            return true;
-        }
-
-        if ($user->isResident()) {
-            return $user->activeFlats->contains($visitor->flat_id);
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if user can update visitor state
-     */
-    private function canManage(Visitor $visitor): bool
-    {
-        $user = Auth::user();
-
-        if ($user->isSuperAdmin()) {
-            return true;
-        }
-
-        if (!$this->belongsToUsersSociety($user, $visitor)) {
-            return false;
-        }
-
-        if ($user->hasPermission('visitors.update') && !$user->isResident()) {
-            return true;
-        }
-
-        if ($user->isResident()) {
-            return $user->activeFlats->contains($visitor->flat_id);
-        }
-
-        return false;
-    }
-
-    private function canAccessFlat(Flat $flat): bool
-    {
-        $user = Auth::user();
-
-        if ($user->isSuperAdmin()) {
-            return true;
-        }
-
-        return $flat->tower?->society_id === $user->society_id;
-    }
-
-    private function belongsToUsersSociety($user, Visitor $visitor): bool
-    {
-        return $visitor->flat?->tower?->society_id === $user->society_id;
     }
 }

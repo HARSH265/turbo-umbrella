@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Http\Requests\StoreComplaintRequest;
 use App\Http\Requests\AssignComplaintRequest;
 use App\Models\Complaint;
+use App\Services\ComplaintAccessService;
 use App\Services\ComplaintService;
 use Illuminate\Http\Request;
 
@@ -20,12 +21,11 @@ use Illuminate\Http\Request;
  */
 class ComplaintController extends Controller
 {
-    protected ComplaintService $complaintService;
-
-    public function __construct(ComplaintService $complaintService)
+    public function __construct(
+        protected ComplaintService $complaintService,
+        protected ComplaintAccessService $accessService
+    )
     {
-        $this->complaintService = $complaintService;
-
         // Apply middleware
         $this->middleware('permission:complaints.view')->only(['index', 'show']);
         $this->middleware('permission:complaints.create')->only(['create', 'store']);
@@ -65,21 +65,7 @@ class ComplaintController extends Controller
             });
         }
 
-        // For residents, show only their complaints
-        if ($user->isResident()) {
-            $query->where('user_id', $user->id);
-        }
-
-        // For staff, show assigned complaints
-        if ($user->isStaff()) {
-            $query->where('assigned_to', $user->id);
-        }
-
-        if ($user->isSocietyAdmin() && $user->society_id) {
-            $query->whereHas('flat.tower', function ($q) use ($user) {
-                $q->where('society_id', $user->society_id);
-            });
-        }
+        $this->accessService->scopeIndexQuery($query, $user);
 
         $complaints = $query->latest()->paginate(20)->withQueryString();
 
@@ -151,12 +137,12 @@ class ComplaintController extends Controller
     public function show(Complaint $complaint)
     {
         // Authorization check
-        if (!$this->canViewComplaint($complaint)) {
+        if (!$this->accessService->canView(Auth::user(), $complaint)) {
             abort(403);
         }
 
         $complaint->load(['user', 'flat.tower', 'assignedStaff', 'comments.user', 'files']);
-        $assignableStaff = $this->getAssignableStaff($complaint);
+        $assignableStaff = $this->accessService->assignableStaff($complaint);
 
         return view('complaints.show', compact('complaint', 'assignableStaff'));
     }
@@ -166,6 +152,10 @@ class ComplaintController extends Controller
      */
     public function assign(AssignComplaintRequest $request, Complaint $complaint)
     {
+        if (!$this->accessService->canManage(Auth::user(), $complaint)) {
+            abort(403);
+        }
+
         try {
             $this->complaintService->assign($complaint->id, $request->assigned_to);
 
@@ -180,7 +170,7 @@ class ComplaintController extends Controller
      */
     public function addComment(Request $request, Complaint $complaint)
     {
-        if (!$this->canViewComplaint($complaint)) {
+        if (!$this->accessService->canView(Auth::user(), $complaint)) {
             abort(403);
         }
 
@@ -241,7 +231,7 @@ class ComplaintController extends Controller
      */
     public function resolve(Request $request, Complaint $complaint)
     {
-        if (!$this->canManageComplaint($complaint)) {
+        if (!$this->accessService->canManage(Auth::user(), $complaint)) {
             abort(403);
         }
 
@@ -264,29 +254,29 @@ class ComplaintController extends Controller
      */
     public function updateStatus(Request $request, Complaint $complaint)
     {
-        if (!$this->canManageComplaint($complaint)) {
+        if (!$this->accessService->canManage(Auth::user(), $complaint)) {
             abort(403);
         }
 
         $request->validate([
-            'status' => 'required|in:open,in_progress,resolved,closed',
+            'status' => 'required|in:open,in_progress,closed',
         ]);
 
         try {
             $newStatus = $request->status;
-            $oldStatus = $complaint->status;
+            $oldStatus = $complaint->status->value;
             $user = auth()->user();
 
-            // Validation: Cannot close unless resolved
+            // Only resolved complaints can be closed
             if ($newStatus === 'closed' && $oldStatus !== 'resolved') {
                 return back()->withErrors(['status' => 'Can only close resolved complaints.']);
             }
 
             // Only society admin or super admin can close a resolved complaint
             if (
-                $newStatus === 'closed' &&
-                !$user->isSuperAdmin() &&
-                !$user->isSocietyAdmin()
+                $newStatus === 'closed'
+                && !$user->isSuperAdmin()
+                && !$user->isSocietyAdmin()
             ) {
                 return back()->withErrors(['status' => 'Only admin or super admin can close a resolved complaint.']);
             }
@@ -314,7 +304,7 @@ class ComplaintController extends Controller
      */
     public function dispute(Request $request, Complaint $complaint)
     {
-        if (!$this->canDisputeComplaint($complaint)) {
+        if (!$this->accessService->canDispute(Auth::user(), $complaint)) {
             abort(403);
         }
 
@@ -339,81 +329,5 @@ class ComplaintController extends Controller
                 'error' => 'Failed to dispute complaint: ' . $e->getMessage(),
             ]);
         }
-    }
-
-
-    /**
-     * Check if user can view specific complaint
-     */
-    private function canViewComplaint(Complaint $complaint): bool
-    {
-        $user = Auth::user();
-
-        if ($user->isSuperAdmin()) {
-            return true;
-        }
-
-        if ($user->isSocietyAdmin()) {
-            return $complaint->flat
-                && $complaint->flat->tower
-                && $complaint->flat->tower->society_id === $user->society_id;
-        }
-
-        // Residents can view their own
-        if ($user->isResident() && $complaint->user_id === $user->id) {
-            return true;
-        }
-
-        // Staff can view assigned
-        if ($user->isStaff() && $complaint->assigned_to === $user->id) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if user can update or resolve a complaint
-     */
-    private function canManageComplaint(Complaint $complaint): bool
-    {
-        $user = Auth::user();
-
-        if ($user->isSuperAdmin()) {
-            return true;
-        }
-
-        if ($user->isSocietyAdmin()) {
-            return $complaint->flat
-                && $complaint->flat->tower
-                && $complaint->flat->tower->society_id === $user->society_id;
-        }
-
-        if ($user->isStaff()) {
-            return $complaint->assigned_to === $user->id;
-        }
-
-        return false;
-    }
-
-    private function canDisputeComplaint(Complaint $complaint): bool
-    {
-        $user = Auth::user();
-
-        return $user->isResident()
-            && $complaint->user_id === $user->id
-            && $complaint->status->value === 'resolved';
-    }
-
-    private function getAssignableStaff(Complaint $complaint)
-    {
-        $societyId = $complaint->flat?->tower?->society_id;
-
-        return User::withRole('staff')
-            ->active()
-            ->when($societyId, function ($query) use ($societyId) {
-                $query->where('society_id', $societyId);
-            })
-            ->get();
     }
 }

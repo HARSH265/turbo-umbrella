@@ -6,7 +6,9 @@
 @section('content')
 <div class="max-w-3xl mx-auto">
     <div class="mb-6">
-        <a href="{{ route('visitors.index') }}" class="text-gray-600 hover:text-gray-900">← Back to Visitors</a>
+        <a href="{{ route('visitors.index') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <- Back to Visitors
+        </a>
     </div>
 
     <div class="bg-white rounded-lg shadow p-6">
@@ -41,6 +43,12 @@
                 <dt class="text-sm text-gray-600">Exit Time</dt>
                 <dd class="mt-1 font-medium text-gray-900">{{ $visitor->exit_time ? $visitor->exit_time->format('d M Y, h:i A') : 'Still Inside' }}</dd>
             </div>
+            @if($visitor->remarks)
+            <div class="md:col-span-2">
+                <dt class="text-sm text-gray-600">Remarks</dt>
+                <dd class="mt-1 font-medium text-gray-900">{{ $visitor->remarks }}</dd>
+            </div>
+            @endif
             @if($visitor->approver)
             <div>
                 <dt class="text-sm text-gray-600">Approved By</dt>
@@ -49,24 +57,36 @@
             @endif
         </dl>
 
-        @if($visitor->approval_status === 'pending')
+        @if($canApproveAction || $canRejectAction)
         <div class="mt-6 pt-6 border-t flex space-x-3">
+            @if($canApproveAction)
             <form method="POST" action="{{ route('visitors.approve', $visitor) }}">
                 @csrf
                 <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                     Approve
                 </button>
             </form>
+            @endif
+
+            @if($canRejectAction)
             <form method="POST" action="{{ route('visitors.reject', $visitor) }}">
                 @csrf
-                <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-                    Reject
-                </button>
+                <div class="space-y-2">
+                    <label for="remarks" class="block text-sm font-medium text-gray-700">Rejection Reason</label>
+                    <textarea id="remarks" name="remarks" rows="3" class="w-full border-gray-300 rounded-lg" placeholder="Add a short reason for rejection">{{ old('remarks') }}</textarea>
+                    @error('remarks')
+                        <p class="text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                        Reject
+                    </button>
+                </div>
             </form>
+            @endif
         </div>
         @endif
 
-        @if(!$visitor->exit_time)
+        @if($canExitAction)
         <div class="mt-6 pt-6 border-t">
             <form method="POST" action="{{ route('visitors.exit', $visitor) }}">
                 @csrf

@@ -19,22 +19,22 @@ class RolePermissionSeeder extends Seeder
         // Super Admin - All permissions
         $superAdmin = Role::where('slug', 'super-admin')->first();
         $allPermissions = Permission::all();
-        $superAdmin->permissions()->attach($allPermissions->pluck('id'));
+        $superAdmin->permissions()->syncWithoutDetaching($allPermissions->pluck('id')->all());
 
         // Society Admin - Most permissions except user management
         $societyAdmin = Role::where('slug', 'society-admin')->first();
         $societyAdminPermissions = Permission::whereNotIn('module', ['users'])->get();
-        $societyAdmin->permissions()->attach($societyAdminPermissions->pluck('id'));
+        $societyAdmin->permissions()->syncWithoutDetaching($societyAdminPermissions->pluck('id')->all());
         
         // Add specific user permissions
-        $societyAdmin->permissions()->attach(
+        $societyAdmin->permissions()->syncWithoutDetaching(
             Permission::whereIn('slug', [
                 'users.view',
                 'users.create',
                 'users.update',
                 'maintenance.policy.view',
                 'maintenance.policy.create',
-            ])->pluck('id')
+            ])->pluck('id')->all()
         );
 
         // Resident - Limited permissions
@@ -47,7 +47,7 @@ class RolePermissionSeeder extends Seeder
             'visitors.view',
             'visitors.update', // Can approve their own visitors
         ])->get();
-        $resident->permissions()->attach($residentPermissions->pluck('id'));
+        $resident->permissions()->syncWithoutDetaching($residentPermissions->pluck('id')->all());
 
         // Staff - Complaint and visitor management
         $staff = Role::where('slug', 'staff')->first();
@@ -59,6 +59,6 @@ class RolePermissionSeeder extends Seeder
             'visitors.create',
             'visitors.update',
         ])->get();
-        $staff->permissions()->attach($staffPermissions->pluck('id'));
+        $staff->permissions()->syncWithoutDetaching($staffPermissions->pluck('id')->all());
     }
 }
