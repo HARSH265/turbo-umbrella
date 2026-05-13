@@ -60,6 +60,18 @@ class PermissionSeeder extends Seeder
             ['name' => 'View Visitors', 'slug' => 'visitors.view', 'module' => 'visitors'],
             ['name' => 'Create Visitors', 'slug' => 'visitors.create', 'module' => 'visitors'],
             ['name' => 'Update Visitors', 'slug' => 'visitors.update', 'module' => 'visitors'],
+
+            // Vehicles
+            ['name' => 'View Vehicles', 'slug' => 'vehicles.view', 'module' => 'vehicles'],
+            ['name' => 'Create Vehicles', 'slug' => 'vehicles.create', 'module' => 'vehicles'],
+            ['name' => 'Update Vehicles', 'slug' => 'vehicles.update', 'module' => 'vehicles'],
+            ['name' => 'Delete Vehicles', 'slug' => 'vehicles.delete', 'module' => 'vehicles'],
+
+            // Amenities
+            ['name' => 'View Amenities', 'slug' => 'amenities.view', 'module' => 'amenities'],
+            ['name' => 'Create Amenities', 'slug' => 'amenities.create', 'module' => 'amenities'],
+            ['name' => 'Update Amenities', 'slug' => 'amenities.update', 'module' => 'amenities'],
+            ['name' => 'Delete Amenities', 'slug' => 'amenities.delete', 'module' => 'amenities'],
         ];
 
         foreach ($permissions as $permission) {

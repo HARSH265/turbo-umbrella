@@ -34,7 +34,8 @@ class VisitorController extends Controller
         $query = Visitor::with(['flat.tower', 'approver', 'creator']);
 
         if ($user->isResident()) {
-            $query->forFlatIds($this->activeFlatIdsFor($user));
+            $flatIds = $user->activeFlats()->pluck('flats.id')->toArray();
+            $query->forFlatIds($flatIds);
         } elseif (($user->isSocietyAdmin() || $user->isStaff()) && $user->society_id) {
             $query->forSociety($user->society_id);
         }

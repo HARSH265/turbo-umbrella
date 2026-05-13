@@ -100,14 +100,19 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->roles()->whereIn('slug', $roles)->exists();
     }
 
-    /**
-     * Check if user has specific permission
+/**
+     * Check if user has a specific permission
      * 
      * @param string $permissionSlug
      * @return bool
      */
     public function hasPermission(string $permissionSlug): bool
     {
+        // Super admin has all permissions
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
         return $this->roles()->whereHas('permissions', function ($query) use ($permissionSlug) {
             $query->where('slug', $permissionSlug);
         })->exists();

@@ -100,9 +100,11 @@
                         </div>
                     </div>
                     <div class="flex items-center space-x-3">
+                        @can('users.view')
                         <a href="{{ route('users.show', $resident) }}" class="text-blue-600 hover:text-blue-800 text-sm">
                             View Profile
                         </a>
+                        @endcan
                         @can('flats.update')
                         <form method="POST" action="{{ route('flats.remove-resident', [$flat, $resident]) }}" class="inline">
                             @csrf
@@ -120,6 +122,43 @@
             </div>
         @endif
     </div>
+
+    <!-- Vehicles -->
+    @if($flat->vehicles->isNotEmpty())
+    <div class="bg-white rounded-lg shadow">
+        <div class="p-6 border-b">
+            <h2 class="text-lg font-semibold text-gray-900">Vehicles</h2>
+        </div>
+        <div class="divide-y divide-gray-200">
+            @foreach($flat->vehicles as $vehicle)
+            <div class="p-6 flex items-center justify-between hover:bg-gray-50">
+                <div class="flex items-center space-x-4">
+                    <div class="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-900">{{ $vehicle->registration_number }}</p>
+                        <p class="text-sm text-gray-600">{{ ucfirst($vehicle->vehicle_type) }} - {{ $vehicle->make }} {{ $vehicle->model }}</p>
+                        <p class="text-sm text-gray-500">{{ $vehicle->color }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    @can('vehicles.view')
+                    <a href="{{ route('vehicles.show', $vehicle) }}" class="text-emerald-600 hover:text-emerald-700 text-sm font-medium">
+                        View Vehicle
+                    </a>
+                    @endcan
+                    <span class="badge {{ $vehicle->is_active ? 'badge-success' : 'badge-gray' }}">
+                        {{ $vehicle->is_active ? 'Active' : 'Inactive' }}
+                    </span>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
 
     <!-- Pending Maintenance -->
     @if($flat->pendingMaintenances->isNotEmpty())

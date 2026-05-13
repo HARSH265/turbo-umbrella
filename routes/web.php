@@ -14,7 +14,9 @@ use App\Http\Controllers\{
     FileController,
     ActivityLogController,
     ProfileController,
-    NotificationController
+    NotificationController,
+    VehicleController,
+    AmenityController,
 };
 use Illuminate\Support\Facades\Route;
 
@@ -99,6 +101,17 @@ Route::middleware(['auth', 'verified', 'user.active'])->group(function () {
     Route::post('visitors/{visitor}/approve', [VisitorController::class, 'approve'])->name('visitors.approve');
     Route::post('visitors/{visitor}/reject', [VisitorController::class, 'reject'])->name('visitors.reject');
     Route::post('visitors/{visitor}/exit', [VisitorController::class, 'recordExit'])->name('visitors.exit');
+
+    // Vehicles
+    Route::resource('vehicles', VehicleController::class);
+
+    // Amenities
+    Route::resource('amenities', AmenityController::class);
+    Route::get('amenities/{amenity}/bookings', [AmenityController::class, 'bookings'])->name('amenities.bookings');
+    Route::get('amenities/{amenity}/book', [AmenityController::class, 'createBooking'])->name('amenities.book');
+    Route::post('amenities/{amenity}/book', [AmenityController::class, 'storeBooking'])->name('amenities.store-booking');
+    Route::get('my-bookings', [AmenityController::class, 'myBookings'])->name('amenities.my-bookings');
+    Route::post('bookings/{booking}/cancel', [AmenityController::class, 'cancelBooking'])->name('amenities.cancel-booking');
 
     // Societies (Admin)
     Route::middleware('role:super-admin,society-admin')->group(function () {

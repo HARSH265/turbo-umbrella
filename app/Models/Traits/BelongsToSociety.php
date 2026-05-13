@@ -31,9 +31,9 @@ trait BelongsToSociety
         return $this->society_id === $societyId;
     }
 
-    public function getSocietyIdAttribute(): ?int
+    public function getSocietyIdAttribute($value): ?int
     {
-        return $this->society_id ?? null;
+        return $value !== null ? (int) $value : null;
     }
 
     public function society()

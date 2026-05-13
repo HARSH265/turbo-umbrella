@@ -108,6 +108,14 @@ class Flat extends Model
     }
 
     /**
+     * Get vehicles associated with flat
+     */
+    public function vehicles()
+    {
+        return $this->hasMany(Vehicle::class);
+    }
+
+    /**
      * Get creator
      */
     public function creator()

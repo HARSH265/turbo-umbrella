@@ -37,7 +37,7 @@ class RolePermissionSeeder extends Seeder
             ])->pluck('id')->all()
         );
 
-        // Resident - Limited permissions
+// Resident - Limited permissions
         $resident = Role::where('slug', 'resident')->first();
         $residentPermissions = Permission::whereIn('slug', [
             'complaints.view',
@@ -46,6 +46,9 @@ class RolePermissionSeeder extends Seeder
             'notices.view',
             'visitors.view',
             'visitors.update', // Can approve their own visitors
+            'amenities.view',
+            'flats.view',
+            'vehicles.view',
         ])->get();
         $resident->permissions()->syncWithoutDetaching($residentPermissions->pluck('id')->all());
 
@@ -58,7 +61,24 @@ class RolePermissionSeeder extends Seeder
             'visitors.view',
             'visitors.create',
             'visitors.update',
+            'amenities.view',
+            'vehicles.view',
+            'vehicles.create',
         ])->get();
         $staff->permissions()->syncWithoutDetaching($staffPermissions->pluck('id')->all());
+
+        // Society Admin - Add vehicles and amenities permissions
+        $societyAdmin->permissions()->syncWithoutDetaching(
+            Permission::whereIn('slug', [
+                'vehicles.view',
+                'vehicles.create',
+                'vehicles.update',
+                'vehicles.delete',
+                'amenities.view',
+                'amenities.create',
+                'amenities.update',
+                'amenities.delete',
+            ])->pluck('id')->all()
+        );
     }
 }

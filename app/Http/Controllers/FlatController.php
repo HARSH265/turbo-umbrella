@@ -43,6 +43,11 @@ class FlatController extends Controller
             $query->whereHas('tower', function ($towerQuery) use ($user) {
                 $towerQuery->where('society_id', $user->society_id);
             });
+        } elseif ($user->isResident()) {
+            $query->whereHas('residents', function ($residentQuery) use ($user) {
+                $residentQuery->where('users.id', $user->id)
+                    ->wherePivot('is_active', true);
+            });
         }
 
         // Filter by tower
@@ -115,20 +120,21 @@ class FlatController extends Controller
         }
     }
 
-    /**
+/**
      * Display flat details
      */
     public function show(Flat $flat)
-{
-    $this->authorizeFlatAccess($flat);
+    {
+        $this->authorizeFlatAccess($flat);
 
-    $flat->load([
-        'tower.society',
-        'activeResidents',
-        'pendingMaintenances',
-        'complaints' => fn($q) => $q->latest()->take(10),
-        'visitors' => fn($q) => $q->latest()->take(5)
-    ]);
+        $flat->load([
+            'tower.society',
+            'activeResidents',
+            'vehicles',
+            'pendingMaintenances',
+            'complaints' => fn($q) => $q->latest()->take(10),
+            'visitors' => fn($q) => $q->latest()->take(5)
+        ]);
 
     return view('flats.show', compact('flat'));
 }
@@ -328,6 +334,17 @@ class FlatController extends Controller
 
         if ($user->isSocietyAdmin() && $flat->tower?->society_id !== $user->society_id) {
             abort(403, 'Unauthorized access to this flat.');
+        }
+
+        if ($user->isResident()) {
+            $hasAccess = $flat->residents()
+                ->where('users.id', $user->id)
+                ->wherePivot('is_active', true)
+                ->exists();
+
+            if (!$hasAccess) {
+                abort(403, 'Unauthorized access to this flat.');
+            }
         }
     }
 
