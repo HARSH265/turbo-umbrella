@@ -63,11 +63,13 @@ class NotificationController extends Controller
 
         $url = data_get($notification->data, 'url');
 
-        if ($this->isSafeNotificationUrl($url)) {
+if ($this->isSafeNotificationUrl($url)) {
             return redirect($url);
         }
 
-        return redirect()->route('notifications.index');
+        return redirect()
+            ->route('notifications.index')
+            ->with('info', 'The notification link is no longer available.');
     }
 
     /**

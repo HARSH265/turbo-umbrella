@@ -98,7 +98,35 @@ Created comprehensive tests for all modules:
 
 ## Next Steps (Future Phases)
 
-### Phase 5: Notification UX Hardening (Medium Priority)
+### Phase 5: Notification UX Hardening ✅ COMPLETED
+
+### Changes Made:
+- Updated `NotificationController@open()` to show info message when target URL is invalid
+- Added message: "The notification link is no longer available."
+
+### Already Implemented:
+- Error flash messages for missing notifications
+- Proper 404 handling
+- Safe URL validation before redirect
+
+---
+
+## Phase 6: Blade/UI Rule Alignment ✅ COMPLETED
+
+### Audit Results:
+- **Sidebar navigation**: Uses `@if(Auth::user()->hasPermission(...))` - properly role-gated
+- **Visitor show page**: Has `$canApproveAction`, `$canRejectAction` variables for action buttons
+- **Maintenance pages**: Proper role-based access controls in place
+- **Complaints**: Backend workflow guards in place, UI reflects state properly
+
+### No Issues Found:
+- Status transition buttons match backend rules
+- Society-scoped dropdowns properly filtered
+- No forbidden action buttons visible to unauthorized roles
+
+---
+
+## Roadmap Complete ✅
 - Add flash messages for notification failures
 - Handle missing/invalid notification targets
 

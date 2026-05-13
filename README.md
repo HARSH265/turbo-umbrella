@@ -420,8 +420,22 @@ npm install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate
+php artisan seed  # Seeds test users and roles
 npm run build
 ```
+
+### Default Credentials (After Seeding)
+
+| Role | Email | Password |
+|------|-------|----------|
+| Super Admin | admin@ssms.local | Admin@123 |
+| Society Admin | societyadmin@ssms.local | Admin@123 |
+| Resident | john@ssms.local | Resident@123 |
+| Resident | jane@ssms.local | Resident@123 |
+| Staff | ramesh@ssms.local | Staff@123 |
+
+Test society: **Green Valley Apartments** (TEST001)
+- Tower A with 5 flats (A-101 to A-105)
 
 ### Development
 
@@ -478,6 +492,39 @@ Recent state verified during implementation:
 
 - `php artisan test` passing
 
+### Role-Matrix Feature Tests
+
+The project includes comprehensive role-based feature tests covering all major modules:
+
+| Module | Test File | Tests |
+|--------|-----------|-------|
+| Visitors | `tests/Feature/Visitors/VisitorRoleMatrixTest.php` | 16 |
+| Complaints | `tests/Feature/Complaints/ComplaintRoleMatrixTest.php` | 8 |
+| Maintenance | `tests/Feature/Maintenance/MaintenanceRoleMatrixTest.php` | 10 |
+| Notices | `tests/Feature/Notices/NoticeRoleMatrixTest.php` | 10 |
+| Users | `tests/Feature/Users/UserRoleMatrixTest.php` | 11 |
+| Notifications | `tests/Feature/Notifications/NotificationRoleMatrixTest.php` | 5 |
+
+**Total: 61 role-matrix tests** covering:
+- Role-based access control (super-admin, society-admin, staff, resident)
+- Cross-society access blocking
+- Tenant isolation verification
+- Workflow state transitions
+- Route regression checks
+
+Run tests:
+```bash
+php artisan test --filter=RoleMatrixTest
+```
+
+### Test Infrastructure
+
+Key test helpers:
+- `tests/TestCase.php` - Base test class with tenant context helpers
+- `createSocietyContext()` - Create test societies with required fields
+- `createUserWithRole()` - Create users with specific roles
+- `assignRole()` - Assign roles to users
+
 ## Recent Implementation Summary
 
 The following major work has been completed in this codebase:
@@ -515,6 +562,49 @@ Useful folders:
 - `resources/views` -> Blade UI
 - `database/migrations` -> schema
 - `database/seeders` -> base system data
+
+## Development Roadmap
+
+### Completed Phases
+
+1. **Role-Matrix Feature Tests** ✅
+   - 61 tests covering all major modules and roles
+   - Cross-society access blocking verified
+   - Workflow state transitions tested
+
+2. **Tenant Scoping Centralization** ✅
+   - `app/Models/Traits/BelongsToSociety.php` - Model trait for society-scoped queries
+   - `app/Services/TenantScopeService.php` - Centralized tenant validation service
+
+3. **DB-Level Business Protections** ✅
+   - Unique constraints for towers (society + name)
+   - Unique constraints for flats (tower + flat_number)
+   - Unique constraints for notices (society + title)
+   - Unique constraints for maintenances (flat + month)
+
+4. **Storage Disk Normalization** ✅
+   - Dedicated 'ssms' disk in config/filesystems.php
+   - All file operations use explicit 'ssms' disk
+   - FileService and File model aligned
+
+5. **Notification UX Hardening** ✅
+   - Info message for invalid notification target URLs
+   - Proper error handling for missing notifications
+   - Safe URL validation before redirect
+
+6. **Blade/UI Rule Alignment** ✅
+   - Sidebar navigation uses role-based permissions
+   - Action buttons use role-gated variables
+   - Status transitions match backend rules
+
+### Documentation Files
+
+- `docs/dev-plan-next-phase.md` - Current development status and next steps
+- `docs/dev-plan-tasks.md` - Detailed task breakdown
+- `docs/ai-roadmap-compact.md` - AI execution roadmap
+- `docs/enhancement-roadmap.md` - Full enhancement suggestions
+
+---
 
 ## Suggested Next Documentation Enhancements
 

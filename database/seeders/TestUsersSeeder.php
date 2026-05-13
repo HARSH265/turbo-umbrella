@@ -12,18 +12,26 @@ use Illuminate\Support\Facades\Hash;
 
 class TestUsersSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Get roles
-        $superAdminRole = Role::where('slug', 'super-admin')->first();
-        $societyAdminRole = Role::where('slug', 'society-admin')->first();
-        $residentRole = Role::where('slug', 'resident')->first();
-        $staffRole = Role::where('slug', 'staff')->first();
+        $roles = Role::all()->keyBy('slug');
 
-        // Create test society, tower, and flats if they don't exist
+        // Get any existing user to use as created_by, or create a temp user
+        $adminUser = User::firstOrCreate(
+            ['email' => 'admin@ssms.local'],
+            [
+                'name' => 'System Admin',
+                'phone' => '9999999999',
+                'password' => Hash::make('Admin@123'),
+                'email_verified_at' => now(),
+                'is_active' => true,
+            ]
+        );
+        if (!$adminUser->roles()->where('role_id', $roles['super-admin']?->id)->exists()) {
+            $adminUser->roles()->attach($roles['super-admin']?->id);
+        }
+        $createdBy = $adminUser->id;
+
         $society = Society::firstOrCreate(
             ['code' => 'TEST001'],
             [
@@ -35,7 +43,7 @@ class TestUsersSeeder extends Seeder
                 'contact_number' => '9876543210',
                 'email' => 'info@greenvalley.com',
                 'is_active' => true,
-                'created_by' => 1,
+                'created_by' => $createdBy,
             ]
         );
 
@@ -44,27 +52,25 @@ class TestUsersSeeder extends Seeder
             [
                 'total_floors' => 10,
                 'is_active' => true,
-                'created_by' => 1,
+                'created_by' => $createdBy,
             ]
         );
 
-        // Create flats
         $flats = [];
         for ($i = 1; $i <= 5; $i++) {
             $flats[] = Flat::firstOrCreate(
                 ['tower_id' => $tower->id, 'flat_number' => "A-10{$i}"],
                 [
-                    'floor_number' => 1,
+                    'floor_number' => 10,
                     'type' => '2BHK',
                     'carpet_area' => 1200,
                     'occupancy_status' => 'occupied',
                     'is_active' => true,
-                    'created_by' => 1,
+                    'created_by' => $createdBy,
                 ]
             );
         }
 
-        // 1. Society Admin User
         $societyAdmin = User::firstOrCreate(
             ['email' => 'societyadmin@ssms.local'],
             [
@@ -74,18 +80,13 @@ class TestUsersSeeder extends Seeder
                 'password' => Hash::make('Admin@123'),
                 'email_verified_at' => now(),
                 'is_active' => true,
-                'created_by' => 1,
+                'created_by' => $createdBy,
             ]
         );
-        $societyAdmin->forceFill([
-            'society_id' => $society->id,
-            'is_active' => true,
-        ])->save();
-        if (!$societyAdmin->roles()->where('role_id', $societyAdminRole->id)->exists()) {
-            $societyAdmin->roles()->attach($societyAdminRole->id);
+        if (!$societyAdmin->roles()->where('role_id', $roles['society-admin']?->id)->exists()) {
+            $societyAdmin->roles()->attach($roles['society-admin']?->id);
         }
 
-        // 2. Resident Users (5 residents)
         $residents = [
             ['name' => 'John Doe', 'email' => 'john@ssms.local', 'phone' => '9876543212'],
             ['name' => 'Jane Smith', 'email' => 'jane@ssms.local', 'phone' => '9876543213'],
@@ -104,35 +105,23 @@ class TestUsersSeeder extends Seeder
                     'password' => Hash::make('Resident@123'),
                     'email_verified_at' => now(),
                     'is_active' => true,
-                    'created_by' => 1,
+                    'created_by' => $createdBy,
                 ]
             );
-            $resident->forceFill([
-                'society_id' => $society->id,
-                'is_active' => true,
-            ])->save();
-
-            // Assign resident role
-            if (!$resident->roles()->where('role_id', $residentRole->id)->exists()) {
-                $resident->roles()->attach($residentRole->id);
+            if (!$resident->roles()->where('role_id', $roles['resident']?->id)->exists()) {
+                $resident->roles()->attach($roles['resident']?->id);
             }
-
-            // Assign to flat
-            if (!$resident->flats()->where('flat_id', $flats[$index]->id)->exists()) {
+            if (isset($flats[$index]) && !$resident->flats()->where('flat_id', $flats[$index]->id)->exists()) {
                 $resident->flats()->attach($flats[$index]->id, [
                     'relation_type' => 'owner',
                     'start_date' => now(),
                     'is_primary' => true,
                     'is_active' => true,
-                    'created_by' => 1,
+                    'created_by' => $createdBy,
                 ]);
-
-                // Update flat occupancy
-                $flats[$index]->update(['occupancy_status' => 'occupied']);
             }
         }
 
-        // 3. Staff Users (2 staff members)
         $staffMembers = [
             ['name' => 'Security Guard - Ramesh', 'email' => 'ramesh@ssms.local', 'phone' => '9876543217'],
             ['name' => 'Maintenance Staff - Suresh', 'email' => 'suresh@ssms.local', 'phone' => '9876543218'],
@@ -148,17 +137,11 @@ class TestUsersSeeder extends Seeder
                     'password' => Hash::make('Staff@123'),
                     'email_verified_at' => now(),
                     'is_active' => true,
-                    'created_by' => 1,
+                    'created_by' => $createdBy,
                 ]
             );
-            $staff->forceFill([
-                'society_id' => $society->id,
-                'is_active' => true,
-            ])->save();
-
-            // Assign staff role
-            if (!$staff->roles()->where('role_id', $staffRole->id)->exists()) {
-                $staff->roles()->attach($staffRole->id);
+            if (!$staff->roles()->where('role_id', $roles['staff']?->id)->exists()) {
+                $staff->roles()->attach($roles['staff']?->id);
             }
         }
 
