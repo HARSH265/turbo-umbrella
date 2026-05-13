@@ -15,6 +15,7 @@ use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class NoticeService
@@ -201,29 +202,33 @@ class NoticeService
 
     public function getNoticeBoardData(User $user): array
     {
-        $baseQuery = Notice::query()
-            ->forUser($user)
-            ->active();
+        $cacheKey = "noticeboard.user.{$user->id}." . ($user->society_id ?? 'global');
 
-        $pinned = (clone $baseQuery)
-            ->with(['society', 'creator'])
-            ->pinned()
-            ->orderByDesc('published_at')
-            ->limit(5)
-            ->get();
+        return CacheService::remember($cacheKey, 60, function () use ($user) {
+            $baseQuery = Notice::query()
+                ->forUser($user)
+                ->active();
 
-        $notices = (clone $baseQuery)
-            ->with(['society', 'creator'])
-            ->where('is_pinned', false)
-            ->orderByDesc('published_at')
-            ->limit(max(0, 5 - $pinned->count()))
-            ->get();
+            $pinned = (clone $baseQuery)
+                ->with(['society', 'creator'])
+                ->pinned()
+                ->orderByDesc('published_at')
+                ->limit(5)
+                ->get();
 
-        return [
-            'pinned' => $pinned,
-            'notices' => $notices,
-            'total' => (clone $baseQuery)->count(),
-        ];
+            $notices = (clone $baseQuery)
+                ->with(['society', 'creator'])
+                ->where('is_pinned', false)
+                ->orderByDesc('published_at')
+                ->limit(max(0, 5 - $pinned->count()))
+                ->get();
+
+            return [
+                'pinned' => $pinned,
+                'notices' => $notices,
+                'total' => (clone $baseQuery)->count(),
+            ];
+        });
     }
 
     public function getAdminNotices(User $admin): LengthAwarePaginator

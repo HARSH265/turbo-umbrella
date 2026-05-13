@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Services\ComplaintService;
 use App\Services\MaintenanceService;
 use App\Services\NoticeService;
+use App\Services\CacheService;
 use App\Models\Society;
 use App\Models\Flat;
 use App\Models\User;
@@ -15,6 +16,7 @@ use Illuminate\Http\Request;
  * DashboardController
  * 
  * Displays role-specific dashboard with key metrics
+ * Optimized with caching for improved performance
  */
 class DashboardController extends Controller
 {
@@ -62,7 +64,7 @@ class DashboardController extends Controller
         $user = Auth::user();
         $societyId = $user->isSocietyAdmin() ? $user->society_id : null;
 
-        $flatsQuery = Flat::active();
+        $flatsQuery = Flat::active()->with('tower');
         $residentsQuery = User::withRole('resident')->active();
         $complaintsSummary = $this->complaintService->getDashboardSummary($societyId);
         $maintenanceSummary = $this->maintenanceService->getSummary($societyId);
@@ -79,7 +81,7 @@ class DashboardController extends Controller
             'total_societies' => $societyId ? 1 : Society::active()->count(),
             'total_flats' => (clone $flatsQuery)->count(),
             'occupied_flats' => (clone $flatsQuery)->where('occupancy_status', 'occupied')->count(),
-            'total_residents' => $residentsQuery->count(),
+            'total_residents' => (clone $residentsQuery)->count(),
             'complaints' => $complaintsSummary,
             'maintenance' => $maintenanceSummary,
             'notice_board' => $this->noticeService->getNoticeBoardData($user),
@@ -106,11 +108,17 @@ class DashboardController extends Controller
                 ->latest()
                 ->take(5)
                 ->get(),
-            'complaint_summary' => [
-                'open' => $user->complaints()->where('status', 'open')->count(),
-                'in_progress' => $user->complaints()->where('status', 'in_progress')->count(),
-                'resolved' => $user->complaints()->where('status', 'resolved')->count(),
-            ],
+            'complaint_summary' => CacheService::remember(
+                "complaints.summary.user.{$user->id}",
+                60,
+                function () use ($user) {
+                    return [
+                        'open' => $user->complaints()->where('status', 'open')->count(),
+                        'in_progress' => $user->complaints()->where('status', 'in_progress')->count(),
+                        'resolved' => $user->complaints()->where('status', 'resolved')->count(),
+                    ];
+                }
+            ),
             'notice_board' => $this->noticeService->getNoticeBoardData($user),
         ];
 
