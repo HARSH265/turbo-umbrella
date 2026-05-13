@@ -70,11 +70,33 @@ Created comprehensive tests for all modules:
 
 ---
 
-## Next Steps (Future Phases)
+## Phase 4: Storage Disk Normalization ✅ COMPLETED
 
-### Phase 4: Storage Disk Normalization (Medium Priority)
-- Audit all `Storage::` calls
-- Replace implicit default with explicit 'ssms' disk
+### Changes Made:
+- Added dedicated 'ssms' disk in `config/filesystems.php`
+- Updated `config/files.php` to use 'ssms' as default
+- Updated `app/Models/File.php` to use 'ssms' disk
+- Updated `app/Services/FileService.php` to use 'ssms' disk
+- Created `storage/app/ssms` directory
+
+### Disk Configuration:
+```php
+'ssms' => [
+    'driver' => 'local',
+    'root' => storage_path('app/ssms'),
+    'url' => env('APP_URL').'/storage/ssms',
+    'visibility' => 'public',
+]
+```
+
+### Audit Results:
+- All `Storage::` calls now use explicit 'ssms' disk
+- No direct Storage calls in controllers (all via FileService)
+- FileService, File model, and config all aligned
+
+---
+
+## Next Steps (Future Phases)
 
 ### Phase 5: Notification UX Hardening (Medium Priority)
 - Add flash messages for notification failures

@@ -28,7 +28,7 @@ class FileService
      */
     private function disk(): string
     {
-        return config('files.default_disk', 'public');
+        return config('files.default_disk', 'ssms');
     }
 
     /**

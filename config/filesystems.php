@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'default' => env('FILESYSTEM_DISK', 'local'),
+    'default' => env('FILESYSTEM_DISK', 'ssms'),
 
     /*
     |--------------------------------------------------------------------------
@@ -42,6 +42,15 @@ return [
             'driver' => 'local',
             'root' => storage_path('app/public'),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'ssms' => [
+            'driver' => 'local',
+            'root' => storage_path('app/ssms'),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage/ssms',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

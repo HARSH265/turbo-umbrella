@@ -20,7 +20,7 @@ class File extends Model
 
     private function disk()
     {
-        return Storage::disk(config('files.default_disk', 'public'));
+        return Storage::disk(config('files.default_disk', 'ssms'));
     }
 
     protected $fillable = [

@@ -19,7 +19,7 @@ return [
     | Configurable via .env for different environments.
     | Options: local, public, s3
     */
-    'default_disk' => env('FILESYSTEM_DISK', 'public'),
+    'default_disk' => env('FILESYSTEM_DISK', 'ssms'),
 
     /*
     |--------------------------------------------------------------------------
