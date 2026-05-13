@@ -25,3 +25,8 @@ Thumbs.db
 docs/enhancement-roadmap.md
 docs/ai-roadmap-compact.md
 .codex/skills/
+_ide_helper.php
+_ide_helper_models.php
+*.swp
+*.swo
+*~

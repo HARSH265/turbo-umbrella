@@ -43,7 +43,7 @@ class ActivityLogController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $logs = $query->latest()->paginate(50)->withQueryString();
+        $logs = $query->latest()->paginate(5)->withQueryString();
 
         $modulesQuery = ActivityLog::query();
         $actionsQuery = ActivityLog::query();
@@ -66,7 +66,7 @@ class ActivityLogController extends Controller
                 $this->applySocietyScope($query);
             })
             ->latest()
-            ->paginate(20);
+            ->paginate(5);
 
         return view('activity-logs.show', compact('logs', 'module', 'entityId'));
     }

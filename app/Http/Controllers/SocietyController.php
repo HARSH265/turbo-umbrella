@@ -51,7 +51,7 @@ class SocietyController extends Controller
             $query->where('is_active', $request->boolean('is_active'));
         }
 
-        $societies = $query->latest()->paginate(20)->withQueryString();
+        $societies = $query->latest()->paginate(5)->withQueryString();
 
         return view('societies.index', compact('societies'));
     }

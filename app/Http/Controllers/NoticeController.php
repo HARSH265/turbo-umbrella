@@ -58,7 +58,7 @@ class NoticeController extends Controller
             $notices = $query
                 ->orderByDesc('is_pinned')
                 ->orderByDesc('published_at')
-                ->paginate(15)
+                ->paginate(5)
                 ->withQueryString();
         }
 

@@ -67,7 +67,7 @@ class ComplaintController extends Controller
 
         $this->accessService->scopeIndexQuery($query, $user);
 
-        $complaints = $query->latest()->paginate(20)->withQueryString();
+        $complaints = $query->latest()->paginate(5)->withQueryString();
 
         return view('complaints.index', compact('complaints'));
     }

@@ -2,15 +2,26 @@
 
 @section('content')
 <div class="space-y-6">
-    <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-semibold text-gray-900">Complaints</h1>
+    <div class="page-header">
+        <div>
+            <h1 class="page-header-title">Complaints</h1>
+            <p class="page-header-subtitle">Manage resident complaints and requests</p>
+        </div>
+        @can('complaints.create')
+        <a href="{{ route('complaints.create') }}" class="btn btn-primary">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            New Complaint
+        </a>
+        @endcan
     </div>
 
     <x-card>
         <form method="GET" action="{{ route('complaints.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
                 <x-input-label value="Status" class="mb-1" />
-                <select name="status" class="w-full border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500">
+                <select name="status" class="form-select">
                     <option value="">All Statuses</option>
                     @foreach(\App\Enums\ComplaintStatus::cases() as $status)
                         <option value="{{ $status->value }}" {{ request('status') === $status->value ? 'selected' : '' }}>
@@ -29,43 +40,43 @@
         </form>
     </x-card>
 
-    <x-data-table :headers="['Ticket', 'Subject', 'Resident', 'Priority', 'Status', 'Action']" :data="$complaints" route="{{ route('complaints.create') }}" createText="New Complaint">
+    <x-data-table :headers="['Ticket', 'Subject', 'Resident', 'Priority', 'Status', 'Action']" :data="$complaints">
         @forelse($complaints as $complaint)
-        <tr class="hover:bg-gray-50">
-            <td class="px-6 py-4 text-sm font-bold text-gray-900">{{ $complaint->ticket_number }}</td>
-            <td class="px-6 py-4">
-                <div class="text-sm font-medium text-gray-800">{{ Str::limit($complaint->subject, 35) }}</div>
+        <tr>
+            <td class="font-bold">{{ $complaint->ticket_number }}</td>
+            <td>
+                <div class="font-medium">{{ Str::limit($complaint->subject, 35) }}</div>
                 <div class="text-xs text-gray-500">{{ $complaint->category }}</div>
             </td>
-            <td class="px-6 py-4">
-                <div class="text-sm text-gray-700">{{ $complaint->user->name }}</div>
+            <td>
+                <div>{{ $complaint->user->name }}</div>
                 <div class="text-xs text-gray-500">{{ $complaint->flat->full_name }}</div>
             </td>
-            <td class="px-6 py-4">
-                <span class="px-2 py-1 text-xs font-medium rounded-full
-                    @if($complaint->priority->value === 'urgent') bg-red-100 text-red-800
-                    @elseif($complaint->priority->value === 'high') bg-orange-100 text-orange-800
-                    @elseif($complaint->priority->value === 'medium') bg-yellow-100 text-yellow-800
-                    @else bg-gray-100 text-gray-800 @endif">
+            <td>
+                <span class="badge
+                    @if($complaint->priority->value === 'urgent') badge-danger
+                    @elseif($complaint->priority->value === 'high') badge-warning
+                    @elseif($complaint->priority->value === 'medium') badge-info
+                    @else badge-gray @endif">
                     {{ ucfirst($complaint->priority->value) }}
                 </span>
             </td>
-            <td class="px-6 py-4">
-                <span class="px-2 py-1 text-xs font-medium rounded-full
-                    @if($complaint->status->value === 'open') bg-blue-100 text-blue-800
-                    @elseif($complaint->status->value === 'in_progress') bg-yellow-100 text-yellow-800
-                    @elseif($complaint->status->value === 'resolved') bg-green-100 text-green-800
-                    @else bg-gray-100 text-gray-800 @endif">
+            <td>
+                <span class="badge
+                    @if($complaint->status->value === 'open') badge-info
+                    @elseif($complaint->status->value === 'in_progress') badge-warning
+                    @elseif($complaint->status->value === 'resolved') badge-success
+                    @else badge-gray @endif">
                     {{ str_replace('_', ' ', ucfirst($complaint->status->value)) }}
                 </span>
             </td>
-            <td class="px-6 py-4 text-right">
-                <a href="{{ route('complaints.show', $complaint) }}" class="text-sm font-medium text-emerald-600 hover:text-emerald-800">View</a>
+            <td>
+                <a href="{{ route('complaints.show', $complaint) }}" class="text-emerald-600 hover:text-emerald-700 font-medium">View</a>
             </td>
         </tr>
         @empty
         <tr>
-            <td colspan="6" class="px-6 py-10 text-center text-gray-500">No complaints found for the selected filters.</td>
+            <td colspan="6">No complaints found for the selected filters.</td>
         </tr>
         @endforelse
     </x-data-table>

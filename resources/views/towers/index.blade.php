@@ -5,25 +5,26 @@
 
 @section('content')
 <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
+    <div class="page-header">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900">Towers</h1>
-            <p class="mt-1 text-sm text-gray-600">Manage society towers</p>
+            <h1 class="page-header-title">Towers</h1>
+            <p class="page-header-subtitle">Manage society towers</p>
         </div>
         @can('societies.create')
-        <a href="{{ route('towers.create') }}" class="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800">
+        <a href="{{ route('towers.create') }}" class="btn btn-primary">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
             Add Tower
         </a>
         @endcan
     </div>
 
-    <!-- Filters -->
-    <div class="bg-white rounded-lg shadow p-6">
+    <x-card>
         <form method="GET" action="{{ route('towers.index') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Society</label>
-                <select name="society_id" class="w-full border-gray-300 rounded-lg">
+                <select name="society_id" class="form-select">
                     <option value="">All Societies</option>
                     @foreach($societies as $society)
                     <option value="{{ $society->id }}" {{ request('society_id') == $society->id ? 'selected' : '' }}>
@@ -35,7 +36,7 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select name="is_active" class="w-full border-gray-300 rounded-lg">
+                <select name="is_active" class="form-select">
                     <option value="">All Status</option>
                     <option value="1" {{ request('is_active') === '1' ? 'selected' : '' }}>Active</option>
                     <option value="0" {{ request('is_active') === '0' ? 'selected' : '' }}>Inactive</option>
@@ -43,66 +44,31 @@
             </div>
 
             <div class="flex items-end">
-                <button type="submit" class="w-full px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800">
-                    Filter
-                </button>
+                <x-secondary-button type="submit" class="w-full justify-center">Filter</x-secondary-button>
             </div>
         </form>
-    </div>
+    </x-card>
 
-    <!-- Towers Table -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        @if($towers->isEmpty())
-            <div class="text-center py-12">
-                <p class="text-gray-500">No towers found</p>
-            </div>
-        @else
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tower Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Society</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Floors</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($towers as $tower)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {{ $tower->name }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {{ $tower->society->name }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {{ $tower->total_floors }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $tower->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                {{ $tower->is_active ? 'Active' : 'Inactive' }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <a href="{{ route('towers.show', $tower) }}" class="text-blue-600 hover:text-blue-800 mr-3">
-                                View
-                            </a>
-                            @can('societies.update')
-                            <a href="{{ route('towers.edit', $tower) }}" class="text-gray-600 hover:text-gray-800">
-                                Edit
-                            </a>
-                            @endcan
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-
-            <div class="px-6 py-4 border-t">
-                {{ $towers->links() }}
-            </div>
-        @endif
-    </div>
+    <x-data-table :headers="['Tower Name', 'Society', 'Total Floors', 'Status', 'Actions']" :data="$towers">
+        @forelse($towers as $tower)
+        <tr>
+            <td class="font-medium">{{ $tower->name }}</td>
+            <td>{{ $tower->society->name }}</td>
+            <td>{{ $tower->total_floors }}</td>
+            <td>
+                <span class="badge {{ $tower->is_active ? 'badge-success' : 'badge-danger' }}">
+                    {{ $tower->is_active ? 'Active' : 'Inactive' }}
+                </span>
+            </td>
+            <td>
+                <a href="{{ route('towers.show', $tower) }}" class="text-emerald-600 hover:text-emerald-700 font-medium">View</a>
+            </td>
+        </tr>
+        @empty
+        <tr>
+            <td colspan="5">No towers found</td>
+        </tr>
+        @endforelse
+    </x-data-table>
 </div>
 @endsection

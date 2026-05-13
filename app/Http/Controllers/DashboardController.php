@@ -137,7 +137,7 @@ class DashboardController extends Controller
                 ->whereNotIn('status', ['resolved', 'closed'])
                 ->with(['user', 'flat'])
                 ->latest()
-                ->paginate(10),
+                ->paginate(5),
             'pending_count' => $user->assignedComplaints()
                 ->whereIn('status', ['open', 'in_progress'])
                 ->count(),

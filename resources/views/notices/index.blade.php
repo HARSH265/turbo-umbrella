@@ -4,11 +4,19 @@
 
 @section('content')
 <div class="space-y-6">
-    <div class="flex items-center justify-between">
+    <div class="page-header">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900">Notices</h1>
-            <p class="mt-1 text-sm text-gray-500">Society announcements and updates</p>
+            <h1 class="page-header-title">Notices</h1>
+            <p class="page-header-subtitle">Society announcements and updates</p>
         </div>
+        @can('notices.create')
+        <a href="{{ route('notices.create') }}" class="btn btn-primary">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Post Notice
+        </a>
+        @endcan
     </div>
 
     <x-card>
@@ -16,7 +24,7 @@
             @if(Auth::user()->isSuperAdmin())
             <div>
                 <x-input-label value="Society" class="mb-1" />
-                <select name="society_id" class="w-full border-gray-300 rounded-lg text-sm">
+                <select name="society_id" class="form-select">
                     <option value="">All Societies</option>
                     @foreach($societies as $society)
                         <option value="{{ $society->id }}" {{ request('society_id') == $society->id ? 'selected' : '' }}>
@@ -28,7 +36,7 @@
             @endif
             <div>
                 <x-input-label value="Category" class="mb-1" />
-                <select name="category" class="w-full border-gray-300 rounded-lg text-sm">
+                <select name="category" class="form-select">
                     <option value="">All Categories</option>
                     @foreach($categories as $category)
                         <option value="{{ $category->value }}" {{ request('category') === $category->value ? 'selected' : '' }}>
@@ -39,7 +47,7 @@
             </div>
             <div>
                 <x-input-label value="Status" class="mb-1" />
-                <select name="status" class="w-full border-gray-300 rounded-lg text-sm">
+                <select name="status" class="form-select">
                     <option value="">All Status</option>
                     @foreach($statuses as $status)
                         <option value="{{ $status->value }}" {{ request('status') === $status->value ? 'selected' : '' }}>
@@ -54,38 +62,38 @@
         </form>
     </x-card>
 
-    <x-data-table :headers="['Title', 'Category', 'Priority', 'Status', 'Published', 'Actions']" :data="$notices" route="{{ route('notices.create') }}" createText="Post Notice">
+    <x-data-table :headers="['Title', 'Category', 'Priority', 'Status', 'Published', 'Actions']" :data="$notices">
         @forelse($notices as $notice)
-        <tr class="hover:bg-gray-50">
-            <td class="px-6 py-4">
-                <div class="text-sm font-medium text-gray-900">{{ $notice->title }}</div>
+        <tr>
+            <td>
+                <div class="font-medium">{{ $notice->title }}</div>
                 <div class="text-xs text-gray-500">{{ $notice->society->name }}</div>
             </td>
-            <td class="px-6 py-4 text-sm text-gray-600">{{ $notice->category->label() }}</td>
-            <td class="px-6 py-4">
-                <span class="px-2 py-1 text-xs font-medium rounded-full
-                    @if($notice->priority->value === 'urgent') bg-red-100 text-red-800
-                    @elseif($notice->priority->value === 'high') bg-orange-100 text-orange-800
-                    @else bg-gray-100 text-gray-800 @endif">
+            <td>{{ $notice->category->label() }}</td>
+            <td>
+                <span class="badge
+                    @if($notice->priority->value === 'urgent') badge-danger
+                    @elseif($notice->priority->value === 'high') badge-warning
+                    @else badge-gray @endif">
                     {{ $notice->priority->label() }}
                 </span>
             </td>
-            <td class="px-6 py-4">
-                <span class="px-2 py-1 text-xs font-medium rounded-full
-                    @if($notice->status->value === 'published') bg-green-100 text-green-800
-                    @elseif($notice->status->value === 'archived') bg-gray-100 text-gray-800
-                    @else bg-yellow-100 text-yellow-800 @endif">
+            <td>
+                <span class="badge
+                    @if($notice->status->value === 'published') badge-success
+                    @elseif($notice->status->value === 'archived') badge-gray
+                    @else badge-warning @endif">
                     {{ $notice->status->label() }}
                 </span>
             </td>
-            <td class="px-6 py-4 text-sm text-gray-600">{{ $notice->published_at?->format('d M Y') ?? '—' }}</td>
-            <td class="px-6 py-4 text-sm">
-                <a href="{{ route('notices.show', $notice) }}" class="text-emerald-600 hover:text-emerald-800 font-medium">View</a>
+            <td>{{ $notice->published_at?->format('d M Y') ?? '—' }}</td>
+            <td>
+                <a href="{{ route('notices.show', $notice) }}" class="text-emerald-600 hover:text-emerald-700 font-medium">View</a>
             </td>
         </tr>
         @empty
         <tr>
-            <td colspan="6" class="px-6 py-10 text-center text-gray-500">No notices found</td>
+            <td colspan="6">No notices found</td>
         </tr>
         @endforelse
     </x-data-table>

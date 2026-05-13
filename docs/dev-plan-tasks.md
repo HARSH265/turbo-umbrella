@@ -1,20 +1,25 @@
-# SSMS Development Tasks - Next Phase
+# SSMS Development Tasks
 
 ## Task Format: `[Module].[Type].[Priority]`
 
 ---
 
-## T001: Role-Matrix Tests - Maintenance Module
+## Completed Tasks ✅
+
+### T001: Role-Matrix Tests - Maintenance Module
 - **Type**: Test
 - **Priority**: P0 (Highest)
-- **Status**: Not Started
-- **Create**: `tests/Feature/Maintenance/MaintenanceRoleMatrixTest.php`
-- **Tests**:
-  - super-admin: create, view, update, delete any maintenance
-  - society-admin: full access within society
-  - staff: create invoices, view all in society
-  - resident: view own flat's maintenance, make payment
-- **Cross-society check**: Resident cannot see other society's maintenance
+- **Status**: ✅ Completed
+- **File**: `tests/Feature/Maintenance/MaintenanceRoleMatrixTest.php`
+
+### T002-T012: All Completed
+- Role-matrix tests for all modules (Notices, Users, Files, Notifications)
+- Tenant Scope Trait & Service
+- DB constraints (tenant unique, maintenance policy)
+- Storage audit & normalization
+- Notification error handling
+- Blade UI audit
+- Auto Maintenance Generation
 
 ---
 

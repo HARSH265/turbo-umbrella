@@ -65,7 +65,7 @@ class FlatController extends Controller
             $query->where('flat_number', 'LIKE', '%' . $request->search . '%');
         }
 
-        $flats = $query->paginate(50)->withQueryString();
+        $flats = $query->paginate(5)->withQueryString();
         $towers = $this->availableTowersFor($user)->get();
 
         // Load primary residents separately

@@ -5,25 +5,26 @@
 
 @section('content')
 <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
+    <div class="page-header">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900">Flats</h1>
-            <p class="mt-1 text-sm text-gray-600">Manage residential units</p>
+            <h1 class="page-header-title">Flats</h1>
+            <p class="page-header-subtitle">Manage residential units</p>
         </div>
         @can('flats.create')
-        <a href="{{ route('flats.create') }}" class="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800">
+        <a href="{{ route('flats.create') }}" class="btn btn-primary">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
             Add Flat
         </a>
         @endcan
     </div>
 
-    <!-- Filters -->
-    <div class="bg-white rounded-lg shadow p-6">
+    <x-card>
         <form method="GET" action="{{ route('flats.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Tower</label>
-                <select name="tower_id" class="w-full border-gray-300 rounded-lg">
+                <select name="tower_id" class="form-select">
                     <option value="">All Towers</option>
                     @foreach($towers as $tower)
                     <option value="{{ $tower->id }}" {{ request('tower_id') == $tower->id ? 'selected' : '' }}>
@@ -35,7 +36,7 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                <select name="type" class="w-full border-gray-300 rounded-lg">
+                <select name="type" class="form-select">
                     <option value="">All Types</option>
                     <option value="1BHK" {{ request('type') === '1BHK' ? 'selected' : '' }}>1BHK</option>
                     <option value="2BHK" {{ request('type') === '2BHK' ? 'selected' : '' }}>2BHK</option>
@@ -47,7 +48,7 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Occupancy</label>
-                <select name="occupancy_status" class="w-full border-gray-300 rounded-lg">
+                <select name="occupancy_status" class="form-select">
                     <option value="">All</option>
                     <option value="occupied" {{ request('occupancy_status') === 'occupied' ? 'selected' : '' }}>Occupied</option>
                     <option value="vacant" {{ request('occupancy_status') === 'vacant' ? 'selected' : '' }}>Vacant</option>
@@ -55,74 +56,33 @@
             </div>
 
             <div class="flex items-end">
-                <button type="submit" class="w-full px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800">
-                    Filter
-                </button>
+                <x-secondary-button type="submit" class="w-full justify-center">Filter</x-secondary-button>
             </div>
         </form>
-    </div>
+    </x-card>
 
-    <!-- Flats Table -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        @if($flats->isEmpty())
-            <div class="text-center py-12">
-                <p class="text-gray-500">No flats found</p>
-            </div>
-        @else
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Flat</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tower</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Floor</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Resident</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($flats as $flat)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {{ $flat->flat_number }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {{ $flat->tower->name }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {{ $flat->type }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {{ $flat->floor_number }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $flat->occupancy_status === 'occupied' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
-                                {{ ucfirst($flat->occupancy_status) }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {{ optional($flat->activeResidents->where('pivot.is_primary', true)->first())->name ?? '-' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <a href="{{ route('flats.show', $flat) }}" class="text-blue-600 hover:text-blue-800 mr-3">
-                                View
-                            </a>
-                            @can('flats.update')
-                            <a href="{{ route('flats.edit', $flat) }}" class="text-gray-600 hover:text-gray-800">
-                                Edit
-                            </a>
-                            @endcan
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-
-            <div class="px-6 py-4 border-t">
-                {{ $flats->links() }}
-            </div>
-        @endif
-    </div>
+    <x-data-table :headers="['Flat', 'Tower', 'Type', 'Floor', 'Status', 'Resident', 'Actions']" :data="$flats">
+        @forelse($flats as $flat)
+        <tr>
+            <td class="font-medium">{{ $flat->flat_number }}</td>
+            <td>{{ $flat->tower->name }}</td>
+            <td>{{ $flat->type }}</td>
+            <td>{{ $flat->floor_number }}</td>
+            <td>
+                <span class="badge {{ $flat->occupancy_status === 'occupied' ? 'badge-success' : 'badge-gray' }}">
+                    {{ ucfirst($flat->occupancy_status) }}
+                </span>
+            </td>
+            <td>{{ optional($flat->activeResidents->where('pivot.is_primary', true)->first())->name ?? '-' }}</td>
+            <td>
+                <a href="{{ route('flats.show', $flat) }}" class="text-emerald-600 hover:text-emerald-700 font-medium">View</a>
+            </td>
+        </tr>
+        @empty
+        <tr>
+            <td colspan="7">No flats found</td>
+        </tr>
+        @endforelse
+    </x-data-table>
 </div>
 @endsection

@@ -67,7 +67,7 @@ class UserController extends Controller
             });
         }
 
-        $users = $query->latest()->paginate(50)->withQueryString();
+        $users = $query->latest()->paginate(5)->withQueryString();
         $roles = $this->availableRolesFor(Auth::user())->get();
 
         return view('users.index', compact('users', 'roles'));
