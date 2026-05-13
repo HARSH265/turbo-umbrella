@@ -2,20 +2,15 @@
 
 @section('content')
 <div class="space-y-6">
-    <!-- Header: Bold but Clean -->
     <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-semibold text-brand-900 tracking-tight">Complaints</h1>
-        <x-primary-button onclick="window.location='{{ route('complaints.create') }}'">
-            + New Complaint
-        </x-primary-button>
+        <h1 class="text-2xl font-semibold text-gray-900">Complaints</h1>
     </div>
 
-    <!-- Filter Card: Better Spacing -->
     <x-card>
         <form method="GET" action="{{ route('complaints.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
                 <x-input-label value="Status" class="mb-1" />
-                <select name="status" class="w-full border-brand-200 rounded-lg text-sm focus:ring-brand-900/10">
+                <select name="status" class="w-full border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500">
                     <option value="">All Statuses</option>
                     @foreach(\App\Enums\ComplaintStatus::cases() as $status)
                         <option value="{{ $status->value }}" {{ request('status') === $status->value ? 'selected' : '' }}>
@@ -29,71 +24,50 @@
                 <x-text-input name="search" value="{{ request('search') }}" placeholder="Search ticket # or subject..." class="w-full" />
             </div>
             <div>
-                <x-secondary-button type="submit" class="w-full justify-center">
-                    Filter Results
-                </x-secondary-button>
+                <x-secondary-button type="submit" class="w-full justify-center">Filter</x-secondary-button>
             </div>
         </form>
     </x-card>
 
-    <!-- Table: The "Gold" Standard Layout -->
-    <div class="bg-white rounded-xl border border-brand-200 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-brand-100">
-                <thead class="bg-brand-50/50">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-brand-400 uppercase tracking-widest">Ticket</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-brand-400 uppercase tracking-widest">Subject</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-brand-400 uppercase tracking-widest">Resident</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-brand-400 uppercase tracking-widest">Priority</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-brand-400 uppercase tracking-widest">Status</th>
-                        <th class="px-6 py-4 text-right text-xs font-bold text-brand-400 uppercase tracking-widest">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-brand-100">
-                    @forelse($complaints as $complaint)
-                    <tr class="hover:bg-brand-50/30 transition">
-                        <td class="px-6 py-5 text-sm font-bold text-brand-900">{{ $complaint->ticket_number }}</td>
-                        <td class="px-6 py-5">
-                            <div class="text-sm font-semibold text-brand-800">{{ Str::limit($complaint->subject, 35) }}</div>
-                            <div class="text-xs text-brand-400">{{ $complaint->category }}</div>
-                        </td>
-                        <td class="px-6 py-5">
-                            <div class="text-sm text-brand-600">{{ $complaint->user->name }}</div>
-                            <div class="text-[11px] text-brand-400">{{ $complaint->flat->full_name }}</div>
-                        </td>
-                        <td class="px-6 py-5">
-                            <x-badge :color="$complaint->priority->color()">
-                                {{ ucfirst($complaint->priority->value) }}
-                            </x-badge>
-                        </td>
-                        <td class="px-6 py-5">
-                            <x-badge :color="$complaint->status->color()">
-                                {{ str_replace('_', ' ', strtoupper($complaint->status->value)) }}
-                            </x-badge>
-                        </td>
-                        <td class="px-6 py-5 text-right">
-                            <a href="{{ route('complaints.show', $complaint) }}" class="text-sm font-bold text-blue-600 hover:text-blue-800 transition">
-                                View Details
-                            </a>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="6" class="px-6 py-10 text-center text-sm text-brand-400">
-                            No complaints found for the selected filters.
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        @if($complaints->hasPages())
-            <div class="border-t border-brand-100 px-6 py-4">
-                {{ $complaints->links() }}
-            </div>
-        @endif
-    </div>
+    <x-data-table :headers="['Ticket', 'Subject', 'Resident', 'Priority', 'Status', 'Action']" :data="$complaints" route="{{ route('complaints.create') }}" createText="New Complaint">
+        @forelse($complaints as $complaint)
+        <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 text-sm font-bold text-gray-900">{{ $complaint->ticket_number }}</td>
+            <td class="px-6 py-4">
+                <div class="text-sm font-medium text-gray-800">{{ Str::limit($complaint->subject, 35) }}</div>
+                <div class="text-xs text-gray-500">{{ $complaint->category }}</div>
+            </td>
+            <td class="px-6 py-4">
+                <div class="text-sm text-gray-700">{{ $complaint->user->name }}</div>
+                <div class="text-xs text-gray-500">{{ $complaint->flat->full_name }}</div>
+            </td>
+            <td class="px-6 py-4">
+                <span class="px-2 py-1 text-xs font-medium rounded-full
+                    @if($complaint->priority->value === 'urgent') bg-red-100 text-red-800
+                    @elseif($complaint->priority->value === 'high') bg-orange-100 text-orange-800
+                    @elseif($complaint->priority->value === 'medium') bg-yellow-100 text-yellow-800
+                    @else bg-gray-100 text-gray-800 @endif">
+                    {{ ucfirst($complaint->priority->value) }}
+                </span>
+            </td>
+            <td class="px-6 py-4">
+                <span class="px-2 py-1 text-xs font-medium rounded-full
+                    @if($complaint->status->value === 'open') bg-blue-100 text-blue-800
+                    @elseif($complaint->status->value === 'in_progress') bg-yellow-100 text-yellow-800
+                    @elseif($complaint->status->value === 'resolved') bg-green-100 text-green-800
+                    @else bg-gray-100 text-gray-800 @endif">
+                    {{ str_replace('_', ' ', ucfirst($complaint->status->value)) }}
+                </span>
+            </td>
+            <td class="px-6 py-4 text-right">
+                <a href="{{ route('complaints.show', $complaint) }}" class="text-sm font-medium text-emerald-600 hover:text-emerald-800">View</a>
+            </td>
+        </tr>
+        @empty
+        <tr>
+            <td colspan="6" class="px-6 py-10 text-center text-gray-500">No complaints found for the selected filters.</td>
+        </tr>
+        @endforelse
+    </x-data-table>
 </div>
 @endsection
