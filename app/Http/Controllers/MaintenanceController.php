@@ -6,6 +6,7 @@ use App\Http\Requests\ProcessPaymentRequest;
 use App\Http\Requests\StoreMaintenanceRequest;
 use App\Models\Flat;
 use App\Models\Maintenance;
+use App\Models\MaintenancePolicy;
 use App\Models\Society;
 use App\Services\MaintenanceGenerationService;
 use App\Services\MaintenancePaymentService;
@@ -129,8 +130,20 @@ class MaintenanceController extends Controller
         }
 
         $maintenance->load('flat.tower.society');
+        $policy = $maintenance->flat?->tower?->society_id
+            ? MaintenancePolicy::getActiveForSociety($maintenance->flat->tower->society_id)
+            : null;
+        $canPartiallyPay = (bool) ($policy?->template?->isPartialPaymentAllowed());
+        $isFullyPaid = $maintenance->isFullyPaid();
+        $recommendedAmount = $maintenance->balance_due;
 
-        return view('maintenance.payment', compact('maintenance'));
+        return view('maintenance.payment', compact(
+            'maintenance',
+            'policy',
+            'canPartiallyPay',
+            'isFullyPaid',
+            'recommendedAmount'
+        ));
     }
 
     public function processPayment(
@@ -179,7 +192,7 @@ class MaintenanceController extends Controller
                 ->exists();
         }
 
-        return $user->hasPermission('maintenance.view');
+        return false;
     }
 
     private function canManagePayment(Maintenance $maintenance): bool
@@ -202,6 +215,6 @@ class MaintenanceController extends Controller
                 ->exists();
         }
 
-        return $user->hasPermission('maintenance.update');
+        return false;
     }
 }

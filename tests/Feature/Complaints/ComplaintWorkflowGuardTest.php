@@ -94,6 +94,34 @@ class ComplaintWorkflowGuardTest extends TestCase
         ]);
     }
 
+    public function test_society_admin_cannot_reassign_resolved_complaint_back_to_in_progress(): void
+    {
+        [$society] = $this->createSocietyContext('alpha');
+        $resident = $this->createUserWithRole('resident', $society);
+        $admin = $this->createUserWithRole('society-admin', $society);
+        $staff = $this->createUserWithRole('staff', $society);
+        $complaint = $this->createComplaint($resident, $this->createFlatForSociety($society, 'A-205'), [
+            'status' => 'resolved',
+            'resolved_at' => now()->subHour(),
+            'resolution_note' => 'Issue fixed',
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('complaints.assign', $complaint), [
+            'assigned_to' => $staff->id,
+        ]);
+
+        $response->assertSessionHasErrors([
+            'error' => 'Cannot assign resolved or closed complaints.',
+        ]);
+
+        $this->assertDatabaseHas('complaints', [
+            'id' => $complaint->id,
+            'status' => 'resolved',
+            'assigned_to' => null,
+            'resolution_note' => 'Issue fixed',
+        ]);
+    }
+
     public function test_staff_detail_page_does_not_show_assignment_controls_without_assign_permission(): void
     {
         [$society] = $this->createSocietyContext('alpha');

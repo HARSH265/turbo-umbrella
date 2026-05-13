@@ -89,6 +89,10 @@ class ComplaintService
         $complaint = Complaint::findOrFail($complaintId);
         $oldData = $complaint->toArray();
 
+        if (in_array($complaint->status, [ComplaintStatus::RESOLVED, ComplaintStatus::CLOSED], true)) {
+            throw new \InvalidArgumentException('Cannot assign resolved or closed complaints.');
+        }
+
         DB::beginTransaction();
         try {
             // Update complaint with assignment and status

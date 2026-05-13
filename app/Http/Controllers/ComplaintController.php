@@ -160,6 +160,8 @@ class ComplaintController extends Controller
             $this->complaintService->assign($complaint->id, $request->assigned_to);
 
             return back()->with('success', 'Complaint assigned successfully.');
+        } catch (\InvalidArgumentException $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Failed to assign complaint.']);
         }

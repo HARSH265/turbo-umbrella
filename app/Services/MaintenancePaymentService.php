@@ -40,6 +40,10 @@ class MaintenancePaymentService
             $maintenance, $amount, $performedBy,
             $paymentMode, $transactionId, $remarks
         ) {
+            $maintenance = Maintenance::query()
+                ->lockForUpdate()
+                ->findOrFail($maintenance->id);
+
             $oldStatus = $maintenance->status;
 
             // ✅ Validate amount > 0
@@ -84,7 +88,7 @@ class MaintenancePaymentService
             ]);
 
             // ✅ Update aggregate on maintenance
-            $maintenance->amount_paid += $amount;
+            $maintenance->amount_paid = (float) $maintenance->amount_paid + $amount;
             $maintenance->payment_mode   = $paymentMode;
             $maintenance->transaction_id = $transactionId;
             $maintenance->remarks        = $remarks;
@@ -93,9 +97,9 @@ class MaintenancePaymentService
             $maintenance->recalculateStatus();
 
             // ✅ Set paid date only when fully paid
-            if ($maintenance->status->value === 'paid') {
-                $maintenance->paid_date = now();
-            }
+            $maintenance->paid_date = $maintenance->status->value === 'paid'
+                ? now()
+                : null;
 
             $maintenance->updated_by = $performedBy;
             $maintenance->save();
