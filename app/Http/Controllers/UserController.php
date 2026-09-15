@@ -133,7 +133,7 @@ class UserController extends Controller
 
             if ($uploadedFileId !== null) {
                 try {
-                    $this->fileService->delete($uploadedFileId, true);
+                    $this->fileService->purge($uploadedFileId);
                 } catch (\Exception $cleanupException) {
                 }
             }
@@ -232,7 +232,7 @@ class UserController extends Controller
             if ($oldFileId !== null) {
                 DB::afterCommit(function () use ($oldFileId) {
                     try {
-                        $this->fileService->delete($oldFileId, true);
+                        $this->fileService->purge($oldFileId);
                     } catch (\Exception $cleanupException) {
                     }
                 });
@@ -247,7 +247,7 @@ class UserController extends Controller
 
             if ($uploadedFileId !== null) {
                 try {
-                    $this->fileService->delete($uploadedFileId, true);
+                    $this->fileService->purge($uploadedFileId);
                 } catch (\Exception $cleanupException) {
                 }
             }

@@ -107,7 +107,10 @@ class CleanupOrphanFilesTest extends TestCase
         $this->artisan('files:cleanup-orphans')->assertSuccessful();
 
         $this->assertDatabaseHas('files', ['id' => $liveFile->id, 'deleted_at' => null]);
-        $this->assertSoftDeleted('files', ['id' => $orphan->id]);
+
+        // Orphan cleanup purges rather than soft-deletes: the parent is gone for good,
+        // so there is nothing to restore and the disk space is reclaimed.
+        $this->assertDatabaseMissing('files', ['id' => $orphan->id]);
     }
 
     public function test_no_complaints_at_all_deletes_nothing(): void
