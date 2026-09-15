@@ -103,6 +103,83 @@
 }
 
 /* ============================================
+   Responsive Data Table
+   --------------------------------------------
+   Listings carry 7-8 columns. On a phone that forced sideways scrolling on every
+   list screen, which is where residents spend most of their time. Below `md` each
+   row becomes a self-contained card of label/value pairs; from `md` up it stays a
+   normal table.
+
+   Labels come from --col-N custom properties that x-data-table writes onto the
+   <table> from its :headers array, so no view has to label its own cells.
+   ============================================ */
+
+@media (max-width: 767px) {
+    .data-table thead {
+        display: none;
+    }
+
+    .data-table,
+    .data-table tbody,
+    .data-table tbody tr,
+    .data-table tbody td {
+        display: block;
+        width: 100%;
+    }
+
+    .data-table tbody tr {
+        @apply mb-3 rounded-xl border border-gray-200 bg-white px-4 py-1 shadow-sm;
+    }
+
+    .data-table tbody tr:last-child {
+        @apply mb-0;
+    }
+
+    /* flex-wrap so a long value (a complaint subject, a resident + flat pairing) drops
+       onto its own full-width line instead of being squeezed beside its label. */
+    .data-table tbody td {
+        @apply flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-0 py-2.5 text-right;
+        border-bottom: 1px solid theme('colors.gray.100');
+    }
+
+    .data-table tbody tr td:last-child {
+        border-bottom: 0;
+    }
+
+    /* The field name, echoed from the column heading. */
+    .data-table tbody td::before {
+        @apply flex-none text-left text-xs font-semibold uppercase tracking-wider text-gray-500;
+    }
+
+    .data-table tbody td:nth-child(1)::before  { content: var(--col-1, ''); }
+    .data-table tbody td:nth-child(2)::before  { content: var(--col-2, ''); }
+    .data-table tbody td:nth-child(3)::before  { content: var(--col-3, ''); }
+    .data-table tbody td:nth-child(4)::before  { content: var(--col-4, ''); }
+    .data-table tbody td:nth-child(5)::before  { content: var(--col-5, ''); }
+    .data-table tbody td:nth-child(6)::before  { content: var(--col-6, ''); }
+    .data-table tbody td:nth-child(7)::before  { content: var(--col-7, ''); }
+    .data-table tbody td:nth-child(8)::before  { content: var(--col-8, ''); }
+    .data-table tbody td:nth-child(9)::before  { content: var(--col-9, ''); }
+    .data-table tbody td:nth-child(10)::before { content: var(--col-10, ''); }
+    .data-table tbody td:nth-child(11)::before { content: var(--col-11, ''); }
+    .data-table tbody td:nth-child(12)::before { content: var(--col-12, ''); }
+
+    /* An empty-state row spans every column, so it has no field name of its own. */
+    .data-table tbody td[colspan]::before {
+        content: none;
+    }
+
+    .data-table tbody td[colspan] {
+        @apply justify-center text-center;
+    }
+
+    /* Action links need room to be tappable rather than crowding the right edge. */
+    .data-table tbody td:last-child {
+        @apply flex-wrap gap-y-2 pt-3;
+    }
+}
+
+/* ============================================
    Enhanced Pagination Styles
    ============================================ */
 
@@ -115,7 +192,7 @@
 }
 
 .pagination-controls {
-    @apply flex items-center gap-1;
+    @apply flex flex-wrap items-center gap-1;
 }
 
 .pagination-btn {

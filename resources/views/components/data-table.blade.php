@@ -6,11 +6,28 @@
 
 @php
     $hasData = $data && $data->count() > 0;
+
+    /**
+     * Publish the column headings as CSS custom properties so the stylesheet can echo
+     * them back as field labels when the table collapses into cards on phones
+     * (see "Responsive Data Table" in resources/css/app.css).
+     *
+     * Doing it here means no view has to hand-label its cells, and any table added
+     * later inherits the behaviour for free. Characters are restricted to a safe set
+     * because the result is injected into a style attribute unescaped.
+     */
+    $columnLabels = collect($headers)
+        ->map(fn ($header, $i) => sprintf(
+            "--col-%d:'%s'",
+            $i + 1,
+            preg_replace('/[^A-Za-z0-9 ._\/-]/', '', (string) $header)
+        ))
+        ->implode(';');
 @endphp
 
 <div class="card overflow-hidden">
     <div class="overflow-x-auto">
-        <table class="data-table">
+        <table class="data-table" style="{!! $columnLabels !!}">
             <thead>
                 <tr>
                     @foreach($headers as $header)

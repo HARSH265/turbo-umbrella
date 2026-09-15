@@ -90,6 +90,10 @@
         @endforelse
     </div>
 
-    {{ $notifications->links() }}
+    @if($notifications->total() > 0)
+        <div class="card overflow-hidden mt-4">
+            <x-pagination :data="$notifications" />
+        </div>
+    @endif
 </div>
 @endsection

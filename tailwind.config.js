@@ -3,9 +3,13 @@ import forms from '@tailwindcss/forms';
 
 /** @type {import('tailwindcss').Config} */
 export default {
+    // './storage/framework/views/*.php' used to be listed here. That directory is the
+    // compiled Blade cache, so the generated CSS depended on which pages happened to
+    // have been rendered since the last `view:clear` — a cold CI build produced a
+    // different, smaller stylesheet than a local one. Scanning the Blade sources alone
+    // is deterministic and covers everything the app actually uses now that all
+    // pagination goes through <x-pagination> rather than Laravel's default view.
     content: [
-        './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
-        './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
     ],
 

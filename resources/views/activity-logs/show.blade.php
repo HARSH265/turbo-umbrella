@@ -63,9 +63,9 @@
         @endforelse
     </div>
 
-    @if($logs->hasPages())
-        <div class="bg-white rounded-lg shadow p-4">
-            {{ $logs->links() }}
+    @if($logs->total() > 0)
+        <div class="card overflow-hidden">
+            <x-pagination :data="$logs" />
         </div>
     @endif
 </div>

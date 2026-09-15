@@ -126,9 +126,11 @@
                 </div>
 
                 <!-- Pagination -->
-                <div class="mt-4">
-                    {{ $stats['assigned_complaints']->links() }}
-                </div>
+                @if($stats['assigned_complaints']->total() > 0)
+                    <div class="card overflow-hidden mt-4">
+                        <x-pagination :data="$stats['assigned_complaints']" />
+                    </div>
+                @endif
             @endif
         </div>
     </div>
