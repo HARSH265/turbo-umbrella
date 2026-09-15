@@ -21,7 +21,7 @@
     </div>
 
     <x-card>
-        <form method="GET" action="{{ route('visitors.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <form method="GET" action="{{ route('visitors.index') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select name="approval_status" class="form-select">
@@ -33,7 +33,18 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                <input type="date" name="date" value="{{ request('date', now()->format('Y-m-d')) }}" class="form-input">
+                {{-- Not pre-filled with today: the controller already defaults to today's
+                     entries, and pre-filling made the field impossible to clear. --}}
+                <input type="date" name="date" value="{{ request('date') }}"
+                       @disabled(request()->boolean('show_all')) class="form-input">
+            </div>
+            <div class="flex items-end">
+                <label class="inline-flex items-center gap-2 pb-2 text-sm text-gray-700">
+                    <input type="checkbox" name="show_all" value="1"
+                           @checked(request()->boolean('show_all'))
+                           class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                    All dates
+                </label>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Inside</label>

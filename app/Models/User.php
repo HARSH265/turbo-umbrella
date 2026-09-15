@@ -38,6 +38,18 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
+    /**
+     * Per-request memo for role/permission slugs.
+     *
+     * hasRole()/hasPermission() are called dozens of times per request (the sidebar
+     * alone makes 17 checks, and Gate::before fires on every @can and authorize()).
+     * Without this each call was a fresh query. Not persisted — cleared whenever the
+     * user's roles change via flushAccessCache().
+     */
+    protected ?array $roleSlugCache = null;
+
+    protected ?array $permissionSlugCache = null;
+
     // ========================================
     // RELATIONSHIPS
     // ========================================
@@ -86,18 +98,61 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function hasRole(string $roleName): bool
     {
-        return $this->roles()->where('slug', $roleName)->exists();
+        return in_array($roleName, $this->roleSlugs(), true);
     }
 
     /**
      * Check if user has any of given roles
-     * 
+     *
      * @param array $roles
      * @return bool
      */
     public function hasAnyRole(array $roles): bool
     {
-        return $this->roles()->whereIn('slug', $roles)->exists();
+        return count(array_intersect($roles, $this->roleSlugs())) > 0;
+    }
+
+    /**
+     * All role slugs for this user, resolved once per request.
+     *
+     * @return string[]
+     */
+    public function roleSlugs(): array
+    {
+        return $this->roleSlugCache ??= $this->roles()->pluck('slug')->all();
+    }
+
+    /**
+     * All permission slugs granted by this user's roles, resolved once per request.
+     *
+     * @return string[]
+     */
+    public function permissionSlugs(): array
+    {
+        return $this->permissionSlugCache ??= $this->roles()
+            ->with('permissions:id,slug')
+            ->get()
+            ->pluck('permissions')
+            ->flatten()
+            ->pluck('slug')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Drop the memoized role/permission slugs.
+     *
+     * Call after changing a user's role assignments so later checks in the same
+     * request see the new state.
+     */
+    public function flushAccessCache(): static
+    {
+        $this->roleSlugCache = null;
+        $this->permissionSlugCache = null;
+        $this->unsetRelation('roles');
+
+        return $this;
     }
 
 /**
@@ -113,9 +168,7 @@ class User extends Authenticatable implements MustVerifyEmail
             return true;
         }
 
-        return $this->roles()->whereHas('permissions', function ($query) use ($permissionSlug) {
-            $query->where('slug', $permissionSlug);
-        })->exists();
+        return in_array($permissionSlug, $this->permissionSlugs(), true);
     }
 
     /**

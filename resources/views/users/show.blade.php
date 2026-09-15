@@ -112,7 +112,7 @@
             @foreach($user->complaints->take(5) as $complaint)
             <div class="border-l-4 {{ $complaint->status === 'resolved' ? 'border-green-500' : 'border-yellow-500' }} pl-4 py-2">
                 <p class="font-medium text-gray-900">{{ $complaint->subject }}</p>
-                <p class="text-sm text-gray-600">{{ $complaint->ticket_number }} - {{ ucfirst($complaint->status) }}</p>
+                <p class="text-sm text-gray-600">{{ $complaint->ticket_number }} - {{ ucfirst(str_replace('_', ' ', $complaint->status->value)) }}</p>
                 <p class="text-xs text-gray-500">{{ $complaint->created_at->format('d M Y') }}</p>
             </div>
             @endforeach

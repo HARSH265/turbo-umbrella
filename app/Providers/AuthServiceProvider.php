@@ -20,20 +20,33 @@ class AuthServiceProvider extends ServiceProvider
     /**
      * Register any authentication / authorization services.
      */
-   public function boot(): void
-{
-    $this->registerPolicies(); // ✅ IMPORTANT
+    public function boot(): void
+    {
+        $this->registerPolicies();
 
-    Gate::before(function ($user, string $ability) {
-        if (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin()) {
-            return true;
-        }
+        Gate::before(function ($user, string $ability, array $arguments = []) {
+            if (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin()) {
+                return true;
+            }
 
-        if (method_exists($user, 'hasPermission') && $user->hasPermission($ability)) {
-            return true;
-        }
+            // Permission-slug checks only. Blade calls these argument-less —
+            // @can('vehicles.create') — whereas a policy question always carries the
+            // model or class it is about: authorize('update', $notice).
+            //
+            // Previously this granted ANY ability whose name matched a permission slug,
+            // arguments included, which short-circuited the policy and skipped its
+            // ownership and tenant rules. It held only because no policy ability happened
+            // to share a name with a slug; renaming one to 'notices.update' would have
+            // let a society admin edit another society's notice.
+            if ($arguments !== []) {
+                return null;
+            }
 
-        return null;
-    });
-}
+            if (method_exists($user, 'hasPermission') && $user->hasPermission($ability)) {
+                return true;
+            }
+
+            return null;
+        });
+    }
 }

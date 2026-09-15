@@ -38,7 +38,8 @@ class RoleSeeder extends Seeder
         ];
 
         foreach ($roles as $role) {
-            Role::create($role);
+            // updateOrCreate keeps `php artisan db:seed` idempotent.
+            Role::updateOrCreate(['slug' => $role['slug']], $role);
         }
     }
 }

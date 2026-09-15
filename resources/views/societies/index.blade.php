@@ -86,9 +86,9 @@
         @endforelse
     </div>
 
-    @if($societies->hasPages())
-    <div class="card p-4">
-        {{ $societies->links() }}
+    @if($societies->total() > 0)
+    <div class="card overflow-hidden">
+        <x-pagination :data="$societies" />
     </div>
     @endif
 </div>

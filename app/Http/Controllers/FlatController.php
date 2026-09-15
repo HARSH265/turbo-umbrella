@@ -44,9 +44,11 @@ class FlatController extends Controller
                 $towerQuery->where('society_id', $user->society_id);
             });
         } elseif ($user->isResident()) {
+            // wherePivot() is not available on the plain Builder that whereHas() passes
+            // in; the pivot table is already joined, so filter it by name.
             $query->whereHas('residents', function ($residentQuery) use ($user) {
                 $residentQuery->where('users.id', $user->id)
-                    ->wherePivot('is_active', true);
+                    ->where('flat_residents.is_active', true);
             });
         }
 
@@ -70,7 +72,7 @@ class FlatController extends Controller
             $query->where('flat_number', 'LIKE', '%' . $request->search . '%');
         }
 
-        $flats = $query->paginate(5)->withQueryString();
+        $flats = $query->paginate(config('pagination.per_page'))->withQueryString();
         $towers = $this->availableTowersFor($user)->get();
 
         // Load primary residents separately

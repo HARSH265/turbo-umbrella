@@ -186,27 +186,48 @@ class FileService
     */
 
     /**
-     * Delete a single file
-     * 
-     * @param  int  $fileId
-     * @param  bool $removeFromDisk
-     * @return bool
+     * Soft delete a file, keeping the bytes on disk.
+     *
+     * This used to erase the file from disk while only soft-deleting the row, which
+     * left a record permanently pointing at nothing — a "soft" delete that could never
+     * be undone. Deletion is now genuinely reversible via restore(); use purge() when
+     * the bytes should actually go.
+     *
      * @throws FileException
      */
-    public function delete(int $fileId, bool $removeFromDisk = true): bool
+    public function delete(int $fileId): bool
     {
         $file = File::findOrFail($fileId);
+
+        try {
+            $file->delete();
+
+            return true;
+        } catch (\Exception $e) {
+            throw FileException::deletionFailed($e->getMessage());
+        }
+    }
+
+    /**
+     * Permanently remove a file: bytes from disk, row from the database.
+     *
+     * For cases with nothing to preserve — a superseded profile photo, an upload being
+     * rolled back, or an attachment whose parent no longer exists. Not reversible.
+     *
+     * @throws FileException
+     */
+    public function purge(int $fileId): bool
+    {
+        $file = File::withTrashed()->findOrFail($fileId);
 
         DB::beginTransaction();
 
         try {
-            // Remove from disk
-            if ($removeFromDisk && Storage::disk($this->disk())->exists($file->path)) {
+            if (Storage::disk($this->disk())->exists($file->path)) {
                 Storage::disk($this->disk())->delete($file->path);
             }
 
-            // Soft delete DB record
-            $file->delete();
+            $file->forceDelete();
 
             DB::commit();
 
@@ -216,6 +237,24 @@ class FileService
             DB::rollBack();
             throw FileException::deletionFailed($e->getMessage());
         }
+    }
+
+    /**
+     * Restore a soft-deleted file. Possible because delete() keeps the bytes.
+     *
+     * @throws FileException
+     */
+    public function restore(int $fileId): bool
+    {
+        $file = File::withTrashed()->findOrFail($fileId);
+
+        if (!Storage::disk($this->disk())->exists($file->path)) {
+            throw FileException::notFound();
+        }
+
+        $file->restore();
+
+        return true;
     }
 
     /**
@@ -277,23 +316,50 @@ class FileService
     */
 
     /**
+     * Find files for a module whose parent entity is not in the valid set.
+     *
+     * Returns an empty collection when $validEntityIds is empty. That guard is not
+     * cosmetic: Laravel compiles whereNotIn('entity_id', []) to "1 = 1", so an empty
+     * set would match every file for the module and the caller would delete all of
+     * them. "No parents exist" must mean "delete nothing", not "delete everything".
+     *
+     * @param  string $module
+     * @param  int[]  $validEntityIds
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function findOrphans(string $module, array $validEntityIds)
+    {
+        if ($validEntityIds === []) {
+            logger()->warning(
+                "FileService: refusing to treat all {$module} files as orphans — the valid-entity list was empty."
+            );
+
+            return File::whereRaw('1 = 0')->get();
+        }
+
+        return File::where('module', $module)
+            ->whereNotIn('entity_id', $validEntityIds)
+            ->get();
+    }
+
+    /**
      * Delete orphan files (entity no longer exists)
-     * 
+     *
      * @param  string $module
      * @param  int[]  $validEntityIds
      * @return int    Number of orphans deleted
      */
     public function cleanupOrphans(string $module, array $validEntityIds): int
     {
-        $orphans = File::where('module', $module)
-            ->whereNotIn('entity_id', $validEntityIds)
-            ->get();
+        $orphans = $this->findOrphans($module, $validEntityIds);
 
         $count = 0;
 
         foreach ($orphans as $file) {
             try {
-                $this->delete($file->id);
+                // purge(), not delete(): the parent entity is gone for good, so there is
+                // nothing left to restore and the disk space should be reclaimed.
+                $this->purge($file->id);
                 $count++;
             } catch (FileException $e) {
                 logger()->warning("FileService: Orphan cleanup failed for file ID {$file->id}: {$e->getMessage()}");

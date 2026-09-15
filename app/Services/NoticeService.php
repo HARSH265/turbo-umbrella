@@ -202,7 +202,9 @@ class NoticeService
 
     public function getNoticeBoardData(User $user): array
     {
-        $cacheKey = "noticeboard.user.{$user->id}." . ($user->society_id ?? 'global');
+        // Version prefix so a notice change invalidates every user's cached board.
+        $cacheKey = 'noticeboard.v' . CacheService::noticeboardVersion()
+            . ".user.{$user->id}." . ($user->society_id ?? 'global');
 
         return CacheService::remember($cacheKey, 60, function () use ($user) {
             $baseQuery = Notice::query()
@@ -259,7 +261,7 @@ class NoticeService
             ->orderByDesc('is_pinned')
             ->orderByDesc('published_at')
             ->orderByDesc('created_at')
-            ->paginate(15)
+            ->paginate(config('pagination.per_page'))
             ->withQueryString();
     }
 

@@ -47,9 +47,12 @@ return [
             'report' => false,
         ],
 
+        // NOTE: root lives under app/public so that a single `php artisan storage:link`
+        // (public/storage -> storage/app/public) makes /storage/ssms/... resolve over
+        // HTTP. With root at storage/app/ssms the generated URLs return 404.
         'ssms' => [
             'driver' => 'local',
-            'root' => storage_path('app/ssms'),
+            'root' => storage_path('app/public/ssms'),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage/ssms',
             'visibility' => 'public',
             'throw' => false,

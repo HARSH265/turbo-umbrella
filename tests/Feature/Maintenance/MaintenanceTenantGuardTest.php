@@ -19,8 +19,6 @@ class MaintenanceTenantGuardTest extends TestCase
 {
     use RefreshDatabase;
 
-    private User $systemUser;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -78,46 +76,6 @@ class MaintenanceTenantGuardTest extends TestCase
         $this->assertDatabaseCount('maintenance_payments', 0);
     }
 
-    private function createSocietyContext(string $prefix): array
-    {
-        $society = Society::create([
-            'name' => strtoupper($prefix) . ' Society',
-            'code' => strtoupper($prefix) . '-' . fake()->unique()->numerify('###'),
-            'address' => fake()->address(),
-            'city' => 'Indore',
-            'state' => 'MP',
-            'pincode' => '452001',
-            'contact_number' => '900000' . fake()->unique()->numerify('####'),
-            'email' => fake()->unique()->safeEmail(),
-            'is_active' => true,
-            'created_by' => $this->systemUser->id,
-        ]);
-
-        $tower = Tower::create([
-            'society_id' => $society->id,
-            'name' => strtoupper($prefix) . '-T1',
-            'total_floors' => 10,
-            'is_active' => true,
-            'created_by' => $this->systemUser->id,
-        ]);
-
-        return [$society, $tower];
-    }
-
-    private function createFlatForSociety(Society $society, string $flatNumber): Flat
-    {
-        return Flat::create([
-            'tower_id' => $society->towers()->first()->id,
-            'flat_number' => $flatNumber,
-            'floor_number' => 4,
-            'type' => '2BHK',
-            'carpet_area' => 900,
-            'occupancy_status' => 'occupied',
-            'is_active' => true,
-            'created_by' => $this->systemUser->id,
-        ]);
-    }
-
     private function createMaintenance(Flat $flat): Maintenance
     {
         return Maintenance::create([
@@ -154,9 +112,4 @@ class MaintenanceTenantGuardTest extends TestCase
         return $user;
     }
 
-    private function assignRole(User $user, string $roleSlug): void
-    {
-        $role = Role::where('slug', $roleSlug)->firstOrFail();
-        $user->roles()->syncWithoutDetaching([$role->id]);
-    }
 }

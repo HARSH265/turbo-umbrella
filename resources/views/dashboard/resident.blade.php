@@ -137,9 +137,9 @@
                                 <div class="flex items-center">
                                     <h3 class="text-sm font-semibold text-gray-900">{{ $complaint->subject }}</h3>
                                     <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                        @if($complaint->priority === 'urgent') bg-red-100 text-red-800
-                                        @elseif($complaint->priority === 'high') bg-orange-100 text-orange-800
-                                        @elseif($complaint->priority === 'medium') bg-yellow-100 text-yellow-800
+                                        @if($complaint->priority->value === 'urgent') bg-red-100 text-red-800
+                                        @elseif($complaint->priority->value === 'high') bg-orange-100 text-orange-800
+                                        @elseif($complaint->priority->value === 'medium') bg-yellow-100 text-yellow-800
                                         @else bg-gray-100 text-gray-800
                                         @endif">
                                         {{ ucfirst($complaint->priority->value) }}
@@ -154,9 +154,9 @@
                             </div>
                             <div class="ml-4">
                                 <span class="px-3 py-1 text-xs font-semibold rounded-full
-                                    @if($complaint->status === 'open') bg-red-100 text-red-800
-                                    @elseif($complaint->status === 'in_progress') bg-yellow-100 text-yellow-800
-                                    @elseif($complaint->status === 'resolved') bg-green-100 text-green-800
+                                    @if($complaint->status->value === 'open') bg-red-100 text-red-800
+                                    @elseif($complaint->status->value === 'in_progress') bg-yellow-100 text-yellow-800
+                                    @elseif($complaint->status->value === 'resolved') bg-green-100 text-green-800
                                     @else bg-gray-100 text-gray-800
                                     @endif">
                                     {{ ucfirst(str_replace('_', ' ', $complaint->status->value)) }}

@@ -148,9 +148,11 @@ Route::middleware(['auth', 'verified', 'user.active'])->group(function () {
     Route::get('{id}/open',             [NotificationController::class, 'open'])->name('open');
     Route::post('{id}/read',            [NotificationController::class, 'markAsRead'])->name('read');
     Route::post('read-all',             [NotificationController::class, 'markAllAsRead'])->name('read-all');
-    Route::delete('{id}',               [NotificationController::class, 'destroy'])->name('destroy');
-    Route::delete('clear-read',         [NotificationController::class, 'clearRead'])->name('clear-read');
     Route::get('unread-count',          [NotificationController::class, 'unreadCount'])->name('unread-count');
+    // NOTE: the static 'clear-read' URI MUST be registered before the '{id}' wildcard,
+    // otherwise DELETE /notifications/clear-read resolves to destroy('clear-read').
+    Route::delete('clear-read',         [NotificationController::class, 'clearRead'])->name('clear-read');
+    Route::delete('{id}',               [NotificationController::class, 'destroy'])->name('destroy');
 });
 });
 

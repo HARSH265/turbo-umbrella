@@ -59,12 +59,15 @@ class VisitorController extends Controller
             }
         }
 
-        // Show today's visitors by default
-        if (!$request->has('date') && !$request->has('show_all')) {
+        // Default to today's entries — a gate log is normally read for the current day.
+        // Uses filled() rather than has(): an empty date input still submits "date=",
+        // which made has() true and silently dropped the default. "All dates" on the
+        // filter form sends show_all=1 to see the full history.
+        if (!$request->filled('date') && !$request->boolean('show_all')) {
             $query->today();
         }
 
-        $visitors = $query->latest('entry_time')->paginate(5)->withQueryString();
+        $visitors = $query->latest('entry_time')->paginate(config('pagination.per_page'))->withQueryString();
 
         return view('visitors.index', compact('visitors'));
     }

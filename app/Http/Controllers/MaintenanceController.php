@@ -54,7 +54,7 @@ class MaintenanceController extends Controller
         }
 
         $summary = $this->maintenanceService->getSummaryFromQuery(clone $query);
-        $maintenances = $query->orderByDesc('month')->paginate(5)->withQueryString();
+        $maintenances = $query->orderByDesc('month')->paginate(config('pagination.per_page'))->withQueryString();
 
         return view('maintenance.index', compact('maintenances', 'summary'));
     }

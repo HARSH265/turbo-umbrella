@@ -16,8 +16,6 @@ class NoticeRoleMatrixTest extends TestCase
 {
     use RefreshDatabase;
 
-    private User $systemUser;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -151,40 +149,4 @@ class NoticeRoleMatrixTest extends TestCase
         ]);
     }
 
-    protected function createUserWithRole(string $role, Society $society): User
-    {
-        $user = User::factory()->create([
-            'society_id' => $society->id,
-            'created_by' => $this->systemUser->id,
-            'updated_by' => $this->systemUser->id,
-        ]);
-
-        $this->assignRole($user, $role);
-
-        return $user;
-    }
-
-    protected function createSocietyContext(string $prefix): array
-    {
-        $society = Society::create([
-            'name' => strtoupper($prefix) . ' Society',
-            'code' => strtoupper($prefix) . '-' . fake()->unique()->numerify('###'),
-            'address' => fake()->address(),
-            'city' => 'Indore',
-            'state' => 'MP',
-            'pincode' => '452001',
-            'contact_number' => '900000' . fake()->unique()->numerify('####'),
-            'email' => fake()->unique()->safeEmail(),
-            'is_active' => true,
-            'created_by' => $this->systemUser->id,
-        ]);
-
-        return [$society];
-    }
-
-    protected function assignRole(User $user, string $roleSlug): void
-    {
-        $role = Role::where('slug', $roleSlug)->firstOrFail();
-        $user->roles()->syncWithoutDetaching([$role->id]);
-    }
 }

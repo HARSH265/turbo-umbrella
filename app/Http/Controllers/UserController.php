@@ -67,7 +67,7 @@ class UserController extends Controller
             });
         }
 
-        $users = $query->latest()->paginate(5)->withQueryString();
+        $users = $query->latest()->paginate(config('pagination.per_page'))->withQueryString();
         $roles = $this->availableRolesFor(Auth::user())->get();
 
         return view('users.index', compact('users', 'roles'));
@@ -118,6 +118,7 @@ class UserController extends Controller
 
             // Assign role
             $user->roles()->attach($role->id);
+            $user->flushAccessCache();
 
             $this->activityLog->logCreate('user', $user->id, $user->toArray());
 
@@ -132,7 +133,7 @@ class UserController extends Controller
 
             if ($uploadedFileId !== null) {
                 try {
-                    $this->fileService->delete($uploadedFileId, true);
+                    $this->fileService->purge($uploadedFileId);
                 } catch (\Exception $cleanupException) {
                 }
             }
@@ -222,6 +223,7 @@ class UserController extends Controller
 
             // Update role
             $user->roles()->sync([$role->id]);
+            $user->flushAccessCache();
 
             $this->activityLog->logUpdate('user', $user->id, $oldData, $user->fresh()->toArray());
 
@@ -230,7 +232,7 @@ class UserController extends Controller
             if ($oldFileId !== null) {
                 DB::afterCommit(function () use ($oldFileId) {
                     try {
-                        $this->fileService->delete($oldFileId, true);
+                        $this->fileService->purge($oldFileId);
                     } catch (\Exception $cleanupException) {
                     }
                 });
@@ -245,7 +247,7 @@ class UserController extends Controller
 
             if ($uploadedFileId !== null) {
                 try {
-                    $this->fileService->delete($uploadedFileId, true);
+                    $this->fileService->purge($uploadedFileId);
                 } catch (\Exception $cleanupException) {
                 }
             }

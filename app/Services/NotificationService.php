@@ -77,10 +77,9 @@ class NotificationService
             ->whereHas('roles', function ($q) {
                 $q->where('slug', 'resident');
             })
-            ->where('is_active', true)
-            ->get();
+            ->where('is_active', true);
 
-        $this->sendToCollection($residents, $type, $title, $message, $module, $entityId, $url);
+        $this->sendToQuery($residents, $type, $title, $message, $module, $entityId, $url);
     }
 
     /**
@@ -117,9 +116,7 @@ class NotificationService
             $query->where('society_id', $societyId);
         }
 
-        $users = $query->get();
-
-        $this->sendToCollection($users, $type, $title, $message, $module, $entityId, $url);
+        $this->sendToQuery($query, $type, $title, $message, $module, $entityId, $url);
     }
 
     /**
@@ -141,9 +138,10 @@ class NotificationService
         int              $entityId,
         string           $url,
     ): void {
-        $users = User::where('is_active', true)->get();
-
-        $this->sendToCollection($users, $type, $title, $message, $module, $entityId, $url);
+        $this->sendToQuery(
+            User::where('is_active', true),
+            $type, $title, $message, $module, $entityId, $url
+        );
     }
 
     /*
@@ -267,5 +265,38 @@ class NotificationService
         foreach ($users->unique('id') as $user) {
             $user->notify($notification);
         }
+    }
+
+    /**
+     * Notify every user matching a query, in batches.
+     *
+     * Recipients used to be loaded with ->get() and notified one at a time, so a
+     * society-wide notice held the whole recipient set in memory at once. chunkById()
+     * keeps memory flat regardless of society size.
+     *
+     * Delivery is still sequential within a chunk. With QUEUE_CONNECTION=sync that
+     * means the request performs one insert per recipient; switch the queue to
+     * 'database' and run `php artisan queue:work` to move it off the request.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder $query
+     */
+    private function sendToQuery(
+        $query,
+        NotificationType $type,
+        string           $title,
+        string           $message,
+        string           $module,
+        int              $entityId,
+        string           $url,
+    ): void {
+        $notification = new GeneralNotification(
+            $type, $title, $message, $module, $entityId, $url
+        );
+
+        $query->chunkById(200, function ($users) use ($notification) {
+            foreach ($users as $user) {
+                $user->notify($notification);
+            }
+        });
     }
 }

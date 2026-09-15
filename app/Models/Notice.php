@@ -10,6 +10,7 @@ use App\Enums\NoticeCategory;
 use App\Enums\NoticePriority;
 use App\Enums\NoticeStatus;
 use App\Enums\NoticeVisibility;
+use App\Services\CacheService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,21 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Notice extends Model
 {
     use HasFactory, SoftDeletes;
+
+    /**
+     * Invalidate every cached noticeboard whenever a notice changes.
+     *
+     * Hooked on the model rather than in NoticeService so create/update/publish/
+     * archive/pin/delete — and anything added later — are all covered.
+     */
+    protected static function booted(): void
+    {
+        $bump = static fn () => CacheService::bumpNoticeboardVersion();
+
+        static::saved($bump);
+        static::deleted($bump);
+        static::restored($bump);
+    }
 
     protected $fillable = [
         'society_id',

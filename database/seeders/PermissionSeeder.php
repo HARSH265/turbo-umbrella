@@ -75,7 +75,8 @@ class PermissionSeeder extends Seeder
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create($permission);
+            // updateOrCreate keeps `php artisan db:seed` idempotent.
+            Permission::updateOrCreate(['slug' => $permission['slug']], $permission);
         }
     }
 }

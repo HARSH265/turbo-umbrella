@@ -45,10 +45,12 @@ class RolePermissionSeeder extends Seeder
             'maintenance.view',
             'notices.view',
             'visitors.view',
+            'visitors.create', // Can pre-register expected guests
             'visitors.update', // Can approve their own visitors
             'amenities.view',
             'flats.view',
             'vehicles.view',
+            'vehicles.create', // Can register their own vehicles
         ])->get();
         $resident->permissions()->syncWithoutDetaching($residentPermissions->pluck('id')->all());
 

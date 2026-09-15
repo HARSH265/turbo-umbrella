@@ -19,11 +19,15 @@ return new class extends Migration
             $table->index(['society_id', 'status']);
         });
 
+        // Backfill via a correlated subquery. An UPDATE ... JOIN is MySQL-only and
+        // breaks on SQLite (used by the test suite), which cannot resolve a joined
+        // table's column inside the SET clause.
         DB::table('amenity_bookings')
-            ->join('amenities', 'amenity_bookings.amenity_id', '=', 'amenities.id')
-            ->whereNull('amenity_bookings.society_id')
+            ->whereNull('society_id')
             ->update([
-                'amenity_bookings.society_id' => DB::raw('amenities.society_id'),
+                'society_id' => DB::raw(
+                    '(select society_id from amenities where amenities.id = amenity_bookings.amenity_id)'
+                ),
             ]);
     }
 

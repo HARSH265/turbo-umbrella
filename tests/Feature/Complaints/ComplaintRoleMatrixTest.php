@@ -18,8 +18,6 @@ class ComplaintRoleMatrixTest extends TestCase
 {
     use RefreshDatabase;
 
-    private User $systemUser;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -202,59 +200,6 @@ class ComplaintRoleMatrixTest extends TestCase
         ]);
     }
 
-    private function createSocietyContext(string $prefix): array
-    {
-        $society = Society::create([
-            'name' => strtoupper($prefix) . ' Society',
-            'code' => strtoupper($prefix) . '-' . fake()->unique()->numerify('###'),
-            'address' => fake()->address(),
-            'city' => 'Indore',
-            'state' => 'MP',
-            'pincode' => '452001',
-            'contact_number' => '900000' . fake()->unique()->numerify('####'),
-            'email' => fake()->unique()->safeEmail(),
-            'is_active' => true,
-            'created_by' => $this->systemUser->id,
-        ]);
-
-        $tower = Tower::create([
-            'society_id' => $society->id,
-            'name' => strtoupper($prefix) . '-T1',
-            'total_floors' => 10,
-            'is_active' => true,
-            'created_by' => $this->systemUser->id,
-        ]);
-
-        return [$society, $tower];
-    }
-
-    private function createFlatForSociety(Society $society, string $flatNumber): Flat
-    {
-        return Flat::create([
-            'tower_id' => $society->towers()->first()->id,
-            'flat_number' => $flatNumber,
-            'floor_number' => 3,
-            'type' => '2BHK',
-            'carpet_area' => 900,
-            'occupancy_status' => 'occupied',
-            'is_active' => true,
-            'created_by' => $this->systemUser->id,
-        ]);
-    }
-
-    private function createUserWithRole(string $roleSlug, ?Society $society): User
-    {
-        $user = User::factory()->create([
-            'society_id' => $society?->id,
-            'created_by' => $this->systemUser->id,
-            'updated_by' => $this->systemUser->id,
-        ]);
-
-        $this->assignRole($user, $roleSlug);
-
-        return $user;
-    }
-
     private function createComplaint(User $resident, Flat $flat, array $overrides = []): Complaint
     {
         return Complaint::create(array_merge([
@@ -269,9 +214,4 @@ class ComplaintRoleMatrixTest extends TestCase
         ], $overrides));
     }
 
-    private function assignRole(User $user, string $roleSlug): void
-    {
-        $role = Role::where('slug', $roleSlug)->firstOrFail();
-        $user->roles()->syncWithoutDetaching([$role->id]);
-    }
 }

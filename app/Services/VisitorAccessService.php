@@ -89,7 +89,18 @@ class VisitorAccessService
             return true;
         }
 
-        return $flat->tower?->society_id === $user->society_id;
+        if ($flat->tower?->society_id !== $user->society_id) {
+            return false;
+        }
+
+        // Admins and gate staff register visitors for any flat in their society.
+        // A resident may only register against a flat they actually occupy —
+        // society membership alone would let them log visitors to a neighbour's flat.
+        if ($user->isResident()) {
+            return in_array((int) $flat->id, $this->activeFlatIdsFor($user), true);
+        }
+
+        return true;
     }
 
     public function actionFlags(User $user, Visitor $visitor): array

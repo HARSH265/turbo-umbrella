@@ -124,13 +124,32 @@ class Complaint extends Model
      * 
      * @return string
      */
+    /**
+     * Build the next ticket number for today.
+     *
+     * Derived from existing ticket_number values rather than created_at: the unique
+     * index lives on ticket_number, so that is the only thing that can actually
+     * collide. Seeded/backdated rows whose created_at does not match their ticket
+     * date previously caused the sequence to restart at 0001 and hit a duplicate.
+     *
+     * withTrashed() is required because soft-deleted complaints still occupy the
+     * unique index. Callers must still handle a concurrent-insert collision — see
+     * ComplaintService::create(), which retries.
+     */
     private static function generateTicketNumber(): string
     {
-        $date = now()->format('Ymd');
-        $lastTicket = self::whereDate('created_at', now())->latest('id')->first();
-        $sequence = $lastTicket ? (int) substr($lastTicket->ticket_number, -4) + 1 : 1;
+        $prefix = 'CMP-' . now()->format('Ymd') . '-';
 
-        return 'CMP-' . $date . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+        $lastTicket = static::withTrashed()
+            ->where('ticket_number', 'like', $prefix . '%')
+            ->orderByDesc('ticket_number')
+            ->value('ticket_number');
+
+        // Offset past the prefix instead of substr(-4) so the sequence keeps working
+        // beyond 9999 complaints in a single day.
+        $sequence = $lastTicket ? ((int) substr($lastTicket, strlen($prefix))) + 1 : 1;
+
+        return $prefix . str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
     }
 
     /**

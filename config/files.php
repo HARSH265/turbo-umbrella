@@ -6,7 +6,7 @@
  * Centralized File System Configuration
  * 
  * Purpose  : Define per-module file rules, global defaults, and storage settings
- * Used By  : FileService, FileUploadRequest, FilePolicy
+ * Used By  : FileService, FilePolicy
  */
 
 return [

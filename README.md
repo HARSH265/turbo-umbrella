@@ -119,7 +119,7 @@ Supported lifecycle:
 - staff/admin add comments
 - complaint moves through statuses
 - complaint can be resolved
-- resident can reopen a resolved/closed complaint by disputing it
+- resident can reopen a **resolved** complaint by disputing it
 
 Current status values:
 
@@ -233,6 +233,45 @@ Primary files:
 - `app/Http/Controllers/VisitorController.php`
 - `app/Models/Visitor.php`
 - `resources/views/visitors/*`
+
+### 7a. Vehicles
+
+Tracks resident vehicles against flats.
+
+Features:
+
+- register a vehicle to a flat
+- vehicle type and registration details
+- society-scoped listing with flat/type filters
+- residents see only vehicles for flats they occupy
+
+Note: `vehicles.create` is currently granted to society admins and staff, not to
+residents — residents can view but not self-register a vehicle.
+
+Primary files:
+
+- `app/Http/Controllers/VehicleController.php`
+- `app/Models/Vehicle.php`
+- `resources/views/vehicles/*`
+
+### 7b. Amenities
+
+Society amenities and resident bookings.
+
+Features:
+
+- amenity CRUD (admins only)
+- opening/closing hours, capacity, per-hour charge
+- advance-booking window and cancellation cut-off
+- resident booking against one of their flats
+- per-amenity booking list for admins, "my bookings" for residents
+- booking cancellation
+
+Primary files:
+
+- `app/Http/Controllers/AmenityController.php`
+- `app/Models/Amenity.php`, `app/Models/AmenityBooking.php`
+- `resources/views/amenities/*`
 
 ### 8. Centralized Files
 
@@ -378,7 +417,11 @@ Applied to:
 
 ### Resident Complaint Dispute
 
-Residents can reopen work if a complaint is marked resolved/closed but the issue still exists.
+Residents can reopen work if a complaint is marked **resolved** but the issue still exists.
+
+Disputes apply to `resolved` complaints only. Once a society admin or super admin
+**closes** a complaint it stays closed — a recurring issue is raised as a new complaint,
+which keeps the closed state meaningful for reporting.
 
 Flow:
 
@@ -420,7 +463,7 @@ npm install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate
-php artisan seed  # Seeds test users and roles
+php artisan db:seed  # Seeds roles, permissions, test users and demo data
 npm run build
 ```
 
@@ -488,9 +531,13 @@ The test suite was aligned with project customizations such as:
 - sqlite-safe test database config
 - sqlite-safe maintenance migration behavior
 
-Recent state verified during implementation:
+Current state:
 
-- `php artisan test` passing
+- `php artisan test` — **114 passed** (276 assertions)
+
+Self-registration is disabled by design (`RegisteredUserController` aborts with 403
+and no `/register` route is registered), so `RegistrationTest` asserts that the
+endpoint stays unreachable rather than that it works.
 
 ### Role-Matrix Feature Tests
 
@@ -519,11 +566,18 @@ php artisan test --filter=RoleMatrixTest
 
 ### Test Infrastructure
 
-Key test helpers:
-- `tests/TestCase.php` - Base test class with tenant context helpers
-- `createSocietyContext()` - Create test societies with required fields
-- `createUserWithRole()` - Create users with specific roles
-- `assignRole()` - Assign roles to users
+Tests run against SQLite `:memory:` (see `phpunit.xml`), so `pdo_sqlite` and
+`sqlite3` must be enabled in your `php.ini` alongside `pdo_mysql`.
+
+Each role-matrix test file defines its own private helpers rather than inheriting
+them — `tests/TestCase.php` is currently an empty base class:
+
+- `createSocietyContext()` - create a society + tower with the required fields
+- `createUserWithRole()` - create a user and assign a role
+- `assignRole()` - attach a role by slug
+
+Lifting these into `TestCase.php` would remove roughly nine copies of the same
+three methods. The duplication is known, not intentional.
 
 ## Recent Implementation Summary
 

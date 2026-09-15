@@ -119,9 +119,9 @@
         @endforelse
     </div>
 
-    @if($amenities->hasPages())
-    <div class="card p-4">
-        {{ $amenities->links() }}
+    @if($amenities->total() > 0)
+    <div class="card overflow-hidden">
+        <x-pagination :data="$amenities" />
     </div>
     @endif
 </div>

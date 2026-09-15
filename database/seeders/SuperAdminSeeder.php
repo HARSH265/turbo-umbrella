@@ -23,17 +23,19 @@ class SuperAdminSeeder extends Seeder
             return;
         }
 
-        $superAdmin = User::create([
-            'name' => 'Super Admin',
-            'email' => 'admin@ssms.local',
-            'phone' => '9999999999',
-            'password' => Hash::make($password),
-            'email_verified_at' => now(),
-            'is_active' => true,
-        ]);
+        $superAdmin = User::updateOrCreate(
+            ['email' => 'admin@ssms.local'],
+            [
+                'name' => 'Super Admin',
+                'phone' => '9999999999',
+                'password' => Hash::make($password),
+                'email_verified_at' => now(),
+                'is_active' => true,
+            ]
+        );
 
         $superAdminRole = Role::where('slug', 'super-admin')->first();
-        $superAdmin->roles()->attach($superAdminRole->id);
+        $superAdmin->roles()->syncWithoutDetaching([$superAdminRole->id]);
 
         $this->command->info('Super Admin created successfully!');
         $this->command->info('Email: admin@ssms.local');

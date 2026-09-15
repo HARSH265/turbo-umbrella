@@ -102,9 +102,7 @@
                 </tbody>
             </table>
 
-            <div class="px-6 py-4 border-t">
-                {{ $logs->links() }}
-            </div>
+            <x-pagination :data="$logs" />
         @endif
     </div>
 </div>

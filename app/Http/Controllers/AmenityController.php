@@ -35,7 +35,7 @@ class AmenityController extends Controller
             $query->where('is_active', $request->boolean('is_active'));
         }
 
-        $amenities = $query->latest()->paginate(20)->withQueryString();
+        $amenities = $query->latest()->paginate(config('pagination.per_page'))->withQueryString();
 
         return view('amenities.index', compact('amenities'));
     }
@@ -80,11 +80,9 @@ class AmenityController extends Controller
             $validated['society_id'] = (int) $user->society_id;
         }
         
-        // Use DB insert instead of model create
-        $amenityId = \DB::table('amenities')->insertGetId($validated);
-        $amenity = Amenity::find($amenityId);
-        
-        logger('CREATED amenity: id=' . $amenity->id . ', society_id=' . $amenity->society_id . ', toArray: ', $amenity->toArray());
+        // Was a raw DB::table()->insertGetId(), which skipped Eloquent entirely and
+        // left created_at/updated_at NULL on every amenity made through the UI.
+        $amenity = Amenity::create($validated);
 
         return redirect()->route('amenities.index')
             ->with('success', 'Amenity created successfully.');
@@ -178,7 +176,7 @@ class AmenityController extends Controller
             $query->where('booking_date', '<=', $request->date_to);
         }
 
-        $bookings = $query->paginate(20)->withQueryString();
+        $bookings = $query->paginate(config('pagination.per_page'))->withQueryString();
 
         return view('amenities.bookings', compact('amenity', 'bookings'));
     }
@@ -193,9 +191,11 @@ class AmenityController extends Controller
             ->with('tower');
 
         if ($user->isResident()) {
+            // wherePivot() is not available on the plain Builder that whereHas() passes
+            // in; the pivot table is already joined, so filter it by name.
             $flats->whereHas('residents', function ($query) use ($user) {
                 $query->where('users.id', $user->id)
-                    ->wherePivot('is_active', true);
+                    ->where('flat_residents.is_active', true);
             });
         }
 
@@ -276,7 +276,7 @@ class AmenityController extends Controller
             ->where('booking_date', '>=', now()->toDateString())
             ->orderBy('booking_date')
             ->orderBy('start_time')
-            ->paginate(20);
+            ->paginate(config('pagination.per_page'));
 
         return view('amenities.my-bookings', compact('bookings'));
     }
