@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\View\NotificationMenu;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
@@ -15,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->scoped(NotificationMenu::class);
     }
 
     /**
@@ -41,22 +42,11 @@ class AppServiceProvider extends ServiceProvider
             return Auth::check() && Auth::user()->hasRole($role);
         });
 
+        // NotificationMenu resolves its queries on first read and is scoped to the
+        // request, so the bell costs at most two queries per page instead of two per
+        // layout render — and none at all on pages that never read it.
         View::composer(['layouts.app', 'layouts.sidebar'], function ($view) {
-            $notificationMenu = [
-                'unreadCount' => 0,
-                'recent' => collect(),
-            ];
-
-            if (Auth::check()) {
-                $user = Auth::user();
-                $notificationMenu['unreadCount'] = $user->unreadNotifications()->count();
-                $notificationMenu['recent'] = $user->notifications()
-                    ->latest()
-                    ->limit(5)
-                    ->get();
-            }
-
-            $view->with('notificationMenu', $notificationMenu);
+            $view->with('notificationMenu', app(NotificationMenu::class));
         });
     }
 }
