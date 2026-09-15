@@ -127,6 +127,13 @@
         width: 100%;
     }
 
+    /* Inset the row cards from the surrounding panel, otherwise the two borders sit
+       flush against each other and the list reads as one cramped block. The tint gives
+       the white cards something to sit on so each row reads as its own object. */
+    .data-table {
+        @apply bg-gray-50 p-3;
+    }
+
     .data-table tbody tr {
         @apply mb-3 rounded-xl border border-gray-200 bg-white px-4 py-1 shadow-sm;
     }
