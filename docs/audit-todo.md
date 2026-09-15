@@ -3,7 +3,7 @@
 Work items arising from [audit-findings.md](audit-findings.md).
 Each task names the finding(s) it clears, what will actually be done, and how it gets verified.
 
-**Last updated:** 15 September 2026
+**Last updated:** 15 September 2026 — all tasks complete
 
 ---
 
@@ -22,18 +22,18 @@ Each task names the finding(s) it clears, what will actually be done, and how it
 
 | ID | Task | Findings | Priority | Status |
 |---|---|---|---|---|
-| T-01 | Fix `files:cleanup-orphans` data loss | F-02 | P0 | ⬜ NOT STARTED |
-| T-02 | Put the project under git | F-03 | P0 | ⬜ NOT STARTED |
-| T-03 | Resolve file soft-delete semantics | F-17 | P1 | ⬜ NOT STARTED |
-| T-04 | Decide dispute scope for closed complaints | F-18 | P1 | ⏸️ BLOCKED |
-| T-05 | Harden `Gate::before` against ability-name collisions | F-19 | P1 | ⬜ NOT STARTED |
-| T-06 | Add route-sweep + dashboard smoke tests | F-05, F-06 | P2 | ⬜ NOT STARTED |
-| T-07 | Cover Amenities, Vehicles, Files, ActivityLog | F-22 | P2 | ⬜ NOT STARTED |
-| T-08 | Lift test helpers into `TestCase` | F-23 | P2 | ⬜ NOT STARTED |
-| T-09 | Chunk and queue bulk notifications | F-25 | P3 | ⬜ NOT STARTED |
-| T-10 | Make the notification bell lazy | F-26 | P3 | ⬜ NOT STARTED |
-| T-11 | Delete dead files | F-34, F-35 | P4 | ⏸️ BLOCKED |
-| T-12 | Decide resident visitor/vehicle permissions | F-36 | P4 | ⏸️ BLOCKED |
+| T-01 | Fix `files:cleanup-orphans` data loss | F-02 | P0 | ✅ COMPLETED |
+| T-02 | Put the project under git | F-03 | P0 | ✅ COMPLETED |
+| T-03 | Resolve file soft-delete semantics | F-17 | P1 | ✅ COMPLETED |
+| T-04 | Decide dispute scope for closed complaints | F-18 | P1 | ✅ COMPLETED |
+| T-05 | Harden `Gate::before` against ability-name collisions | F-19 | P1 | ✅ COMPLETED |
+| T-06 | Add route-sweep + dashboard smoke tests | F-05, F-06 | P2 | ✅ COMPLETED |
+| T-07 | Cover Amenities, Vehicles, Files, ActivityLog | F-22 | P2 | ✅ COMPLETED |
+| T-08 | Lift test helpers into `TestCase` | F-23 | P2 | ✅ COMPLETED |
+| T-09 | Chunk and queue bulk notifications | F-25 | P3 | ✅ COMPLETED |
+| T-10 | Make the notification bell lazy | F-26 | P3 | ✅ COMPLETED |
+| T-11 | Delete dead files | F-34, F-35 | P4 | ✅ COMPLETED |
+| T-12 | Decide resident visitor/vehicle permissions | F-36 | P4 | ✅ COMPLETED |
 | T-13 | Unblock the environment | — | P0 | ✅ COMPLETED |
 | T-14 | Restore the test suite | F-01, F-20, F-21 | P0 | ✅ COMPLETED |
 | T-15 | Fix crashes and silent corruption | F-04…F-10 | P1 | ✅ COMPLETED |
@@ -42,16 +42,26 @@ Each task names the finding(s) it clears, what will actually be done, and how it
 | T-18 | Unify pagination | F-27…F-30 | P4 | ✅ COMPLETED |
 | T-19 | Correct config and docs | F-16, F-31, F-32, F-33 | P4 | ✅ COMPLETED |
 
-**12 findings open · 24 closed** — 12 open tasks, 7 completed.
+**0 findings open · 36 closed** — all 19 tasks complete.
 
-> T-06 is the exception: the findings it references (F-05, F-06) are already fixed. It exists
-> to add the regression tests that would have caught them, so they cannot come back.
+Tests grew 7 → 167 across the work. Two tasks changed shape as they were executed:
+
+- **T-08 was done before T-06/T-07**, reversing the planned order. Building the shared
+  fixtures first meant the new test files used them instead of adding two more copies to
+  delete later.
+- **T-12 needed more than a permission grant.** `canAccessFlat()` and `findManagedFlat()`
+  checked only society membership, so granting `visitors.create`/`vehicles.create` alone
+  would have let a resident register against a neighbour's flat. Both were scoped to an
+  active `flat_residents` row in the same change.
 
 ---
 
-# Open work
+# Task detail
 
-## T-01 · Fix `files:cleanup-orphans` data loss — ⬜ NOT STARTED
+Every task below is complete. The plans are kept as written so the reasoning
+behind each change stays with the change.
+
+## T-01 · Fix `files:cleanup-orphans` data loss — ✅ COMPLETED
 **Clears:** F-02 · **Priority:** P0 · **Est:** ~15 min
 
 A scheduled-style command that permanently erases user-uploaded evidence. Do this first.
@@ -65,7 +75,7 @@ A scheduled-style command that permanently erases user-uploaded evidence. Do thi
 
 ---
 
-## T-02 · Put the project under git — ⬜ NOT STARTED
+## T-02 · Put the project under git — ✅ COMPLETED
 **Clears:** F-03 · **Priority:** P0 · **Est:** ~10 min
 
 There is a verified baseline right now (114 tests, 232 routes clean) and no way back to it.
@@ -78,7 +88,7 @@ There is a verified baseline right now (114 tests, 232 routes clean) and no way 
 
 ---
 
-## T-03 · Resolve file soft-delete semantics — ⬜ NOT STARTED
+## T-03 · Resolve file soft-delete semantics — ✅ COMPLETED
 **Clears:** F-17 · **Priority:** P1 · **Est:** ~30 min
 
 `FileService::delete()` erases the bytes but soft-deletes the row, leaving a record that
@@ -92,9 +102,14 @@ register that can't produce the file is not much of an audit trail.
 
 **Verify:** test that a soft-deleted `File` either still resolves on disk (A) or leaves no row (B).
 
+> **Done as Option A, plus an explicit escape hatch.** Several call sites genuinely want
+> the bytes gone — a superseded profile photo, an upload being rolled back, an attachment
+> whose parent no longer exists — so `purge()` covers those and `restore()` completes the
+> reversible path. Each call site now states which it means instead of passing a boolean.
+
 ---
 
-## T-04 · Decide dispute scope for closed complaints — ⏸️ BLOCKED
+## T-04 · Decide dispute scope for closed complaints — ✅ COMPLETED
 **Clears:** F-18 · **Priority:** P1
 
 `canDispute()` allows only `resolved`; the README promises resolved **or closed**.
@@ -108,7 +123,7 @@ Either way the fix is small; the direction is a product call.
 
 ---
 
-## T-05 · Harden `Gate::before` — ⬜ NOT STARTED
+## T-05 · Harden `Gate::before` — ✅ COMPLETED
 **Clears:** F-19 · **Priority:** P1 · **Est:** ~20 min
 
 Today it grants any ability whose name matches a permission slug, skipping the policy and
@@ -121,9 +136,15 @@ middleware rather than the global `Gate::before` fallback. Where a policy exists
 **Verify:** a society-admin holding `notices.update` must still be denied on another
 society's notice — assert via a feature test that calls the ability by slug name.
 
+> **Done differently.** Removing the `Gate::before` fallback outright would have broken
+> 24 existing `@can('vehicles.create')`-style checks in Blade, which depend on it. The
+> split is by *arguments* instead: an argument-less ability is a permission-slug question
+> (how Blade asks), while an ability carrying a model or class is a policy question and
+> falls through. Same protection, no view churn.
+
 ---
 
-## T-06 · Add route-sweep + dashboard smoke tests — ⬜ NOT STARTED
+## T-06 · Add route-sweep + dashboard smoke tests — ✅ COMPLETED
 **Clears:** F-05, F-06 · **Priority:** P2 · **Est:** ~45 min
 
 Both bugs were found by ad-hoc harnesses, not the suite. The 61 role-matrix tests never
@@ -140,7 +161,7 @@ checks permanent.
 
 ---
 
-## T-07 · Cover Amenities, Vehicles, Files, ActivityLog — ⬜ NOT STARTED
+## T-07 · Cover Amenities, Vehicles, Files, ActivityLog — ✅ COMPLETED
 **Clears:** F-22 · **Priority:** P2 · **Est:** ~2 h
 
 Zero tests today, and two shipped bugs (F-06, F-10) lived here.
@@ -153,7 +174,7 @@ vehicle listing as a resident, booking creation, file download authorisation via
 
 ---
 
-## T-08 · Lift test helpers into `TestCase` — ⬜ NOT STARTED
+## T-08 · Lift test helpers into `TestCase` — ✅ COMPLETED
 **Clears:** F-23 · **Priority:** P2 · **Est:** ~30 min
 
 `createSocietyContext()` / `createUserWithRole()` / `assignRole()` exist in ~9 copies while
@@ -167,7 +188,7 @@ copies, reconcile the signature difference in `MaintenanceRoleMatrixTest` (it ta
 
 ---
 
-## T-09 · Chunk and queue bulk notifications — ⬜ NOT STARTED
+## T-09 · Chunk and queue bulk notifications — ✅ COMPLETED
 **Clears:** F-25 · **Priority:** P3 · **Est:** ~30 min
 
 `sendToCollection()` loads every recipient and notifies serially; with `QUEUE_CONNECTION=sync`
@@ -181,7 +202,7 @@ running `queue:work` — note that in the README, since notifications currently 
 
 ---
 
-## T-10 · Make the notification bell lazy — ⬜ NOT STARTED
+## T-10 · Make the notification bell lazy — ✅ COMPLETED
 **Clears:** F-26 · **Priority:** P3 · **Est:** ~20 min
 
 The View composer runs two queries on every page render, including pages with no bell.
@@ -193,7 +214,7 @@ and cache the unread count briefly per user.
 
 ---
 
-## T-11 · Delete dead files — ⏸️ BLOCKED
+## T-11 · Delete dead files — ✅ COMPLETED
 **Clears:** F-34, F-35 · **Priority:** P4 · **Est:** ~5 min
 
 **Blocked:** file deletion is refused under the current permission mode, and there is no git
@@ -212,7 +233,7 @@ remove the no-op `File::scopeOrphans()`.
 
 ---
 
-## T-12 · Decide resident visitor/vehicle permissions — ⏸️ BLOCKED
+## T-12 · Decide resident visitor/vehicle permissions — ✅ COMPLETED
 **Clears:** F-36 · **Priority:** P4
 
 **Needs from you:** should residents be able to pre-register a visitor, and register their
@@ -257,13 +278,14 @@ F-16 `.env.example` · F-31 debug logging · F-32 README · F-33 `npm install`.
 
 ---
 
-# Suggested order
+# What changed, in order
 
-1. **T-02** — git first, so everything after is revertible
-2. **T-01** — active data-loss risk
-3. **T-06** — catches the bug class the suite is blind to
-4. **T-04, T-12** — your two decisions; both unblock small fixes
-5. **T-05, T-03** — correctness hardening
-6. **T-07 → T-08** — coverage, then deduplicate
-7. **T-09, T-10** — performance
-8. **T-11** — cleanup, once T-02 makes it safe
+1. **T-02** git baseline, so everything after was revertible
+2. **T-01** the active data-loss bug in `files:cleanup-orphans`
+3. **T-04 / T-12** the two product decisions
+4. **T-08** shared test fixtures, before writing new tests against them
+5. **T-06** dashboard + route-sweep smoke tests — found a real bug on first run
+6. **T-05 / T-03** gate hardening and honest file-deletion semantics
+7. **T-09 / T-10** notification batching and the lazy bell
+8. **T-11** dead-file cleanup
+9. **T-07** coverage for the four untested modules

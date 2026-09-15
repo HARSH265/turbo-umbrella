@@ -144,14 +144,4 @@ class File extends Model
         return $query->where('is_active', true);
     }
 
-    /**
-     * Scope to get orphan files (entity no longer exists)
-     * This is module-specific and should be customized
-     */
-    public function scopeOrphans($query)
-    {
-        // Implementation depends on module validation logic
-        // Example: files where complaint_id doesn't exist in complaints table
-        return $query;
-    }
 }

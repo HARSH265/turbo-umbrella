@@ -30,12 +30,14 @@ and the work item that clears it stay linked.
 
 | Severity | Done | In progress | Not started | Total |
 |---|---|---|---|---|
-| P0 | 1 | 0 | 2 | 3 |
-| P1 | 13 | 0 | 3 | 16 |
-| P2 | 2 | 0 | 2 | 4 |
-| P3 | 1 | 0 | 2 | 3 |
-| P4 | 7 | 0 | 3 | 10 |
-| **Total** | **24** | **0** | **12** | **36** |
+| P0 | 3 | 0 | 0 | 3 |
+| P1 | 16 | 0 | 0 | 16 |
+| P2 | 4 | 0 | 0 | 4 |
+| P3 | 3 | 0 | 0 | 3 |
+| P4 | 10 | 0 | 0 | 10 |
+| **Total** | **36** | **0** | **0** | **36** |
+
+**All 36 findings are closed.** Verification baseline at the bottom of this document.
 
 ---
 
@@ -52,7 +54,7 @@ table's column in the SET clause, so **every test died during migration**.
 - **Fix:** Rewrote as a correlated subquery valid on both drivers.
 - **Note:** The README claimed "`php artisan test` passing". It was not.
 
-### F-02 · `files:cleanup-orphans` destroys recoverable attachments — `NOT STARTED`
+### F-02 · `files:cleanup-orphans` destroys recoverable attachments — `DONE`
 `app/Console/Commands/CleanupOrphanFiles.php:37,43`
 
 Builds its valid-ID set with `Complaint::pluck('id')` / `Notice::pluck('id')`, which
@@ -66,11 +68,14 @@ either table were ever empty, the command deletes **every file for that module**
 
 - **Impact:** Permanent, unrecoverable loss of user-uploaded evidence.
 - **Trigger:** Anyone running the command; it reads as routine maintenance.
+- **Fix:** Valid-ID sets use `withTrashed()`, so soft-deleted parents keep their attachments. `FileService::findOrphans()` refuses an empty valid-ID set rather than matching everything. Added `--dry-run`.
+- **Cover:** `tests/Feature/Files/CleanupOrphanFilesTest.php` (4 tests).
 
-### F-03 · Project is not under version control — `NOT STARTED`
+### F-03 · Project is not under version control — `DONE`
 
 No git repository. No way to revert an edit, review a change, or return to a known-good
 state. Every other fix in this register is riskier than it needs to be as a result.
+- **Fix:** `git init` on branch `main`; baseline committed with `.env`, `vendor/` and `node_modules/` correctly excluded.
 
 ---
 
@@ -176,28 +181,33 @@ never called and named keys nothing used.
 which the project's own `.env` warns "breaks profile photos, complaint attachments and
 notice attachments". A fresh clone was guaranteed broken.
 
-### F-17 · File "soft" delete is unrecoverable — `NOT STARTED`
+### F-17 · File "soft" delete is unrecoverable — `DONE`
 `app/Services/FileService.php:198-209`
 
 `delete()` removes the file from disk **and** soft-deletes the row. The row survives for
 audit but points at bytes that no longer exist — `existsOnDisk()` returns false and
 `getUrlAttribute()` returns null forever. A soft delete that cannot be undone is
 misleading; pick one semantic.
+- **Fix:** Split into `delete()` (soft, reversible, bytes retained), `purge()` (permanent, bytes removed) and `restore()`. Call sites now use the semantic they mean: orphan cleanup and superseded/rolled-back photos purge; user-initiated deletion stays reversible.
+- **Cover:** `tests/Feature/Files/FileDeletionSemanticsTest.php` (4 tests).
 
-### F-18 · Disputes cannot reopen closed complaints — `NOT STARTED`
+### F-18 · Disputes cannot reopen closed complaints — `DONE`
 `app/Services/ComplaintAccessService.php:68`
 
 `canDispute()` requires status `resolved`. The README documents "resident can reopen a
 resolved/**closed** complaint by disputing it". Either the feature is incomplete or the
 docs overstate it — a product decision, not a mechanical fix.
+- **Resolved by decision:** disputes stay resolved-only; the README was corrected. Closing a complaint is final, and a recurring issue is raised as a new one.
 
-### F-19 · `Gate::before` can bypass policies — `NOT STARTED`
+### F-19 · `Gate::before` can bypass policies — `DONE`
 `app/Providers/AuthServiceProvider.php`
 
 Returns `true` for any ability whose **name matches a permission slug**, short-circuiting
 the policy entirely — including its tenant checks. Not currently exploitable: policy
 abilities are named `view` / `update` / `publish`, which match no slug. It becomes a real
 hole the moment someone renames an ability to `notices.update`.
+- **Fix:** `Gate::before` now answers only argument-less slug checks — how Blade asks them. An ability carrying a model or class falls through to the policy so its ownership and tenant rules run.
+- **Cover:** `tests/Feature/Authorization/GateBeforeTest.php` (4 tests).
 
 ---
 
@@ -214,16 +224,18 @@ lock the intended behaviour in.
 `VisitorRouteRegressionTest` asserts absolute URLs against `http://localhost`, but
 `APP_URL` leaked in as `http://localhost:8000`. Pinned `APP_URL` in `phpunit.xml`.
 
-### F-22 · Four modules have zero test coverage — `NOT STARTED`
+### F-22 · Four modules have zero test coverage — `DONE`
 
 **Amenities, Vehicles, Files, ActivityLog.** Not a coincidence — F-06 and F-10 both lived
 in exactly these files and were invisible to the suite.
+- **Fix:** Added `VehicleRoleMatrixTest` (6), `AmenityRoleMatrixTest` (6), `FileAccessTest` (6), `ActivityLogAccessTest` (5) — 23 tests across the four modules.
 
-### F-23 · Test helpers duplicated roughly nine times — `NOT STARTED`
+### F-23 · Test helpers duplicated roughly nine times — `DONE`
 
 `createSocietyContext()` / `createUserWithRole()` / `assignRole()` are copy-pasted
 privately into each role-matrix file while `tests/TestCase.php` sits empty — despite the
 README claiming the base class provides them.
+- **Fix:** Lifted into `Tests\Concerns\CreatesSocietyContext`, used via `Tests\TestCase`; 34 duplicated private copies removed across 12 files.
 
 ---
 
@@ -239,18 +251,21 @@ queries (it calls `isSuperAdmin()` first). The sidebar alone makes 17 checks, an
 - **Measured:** ~34 queries → **3 per request**, resolved once and memoized.
 - Invalidated via `flushAccessCache()` wherever roles change.
 
-### F-25 · Society-wide notifications are serial and synchronous — `NOT STARTED`
+### F-25 · Society-wide notifications are serial and synchronous — `DONE`
 `NotificationService::sendToCollection()`
 
 Loads every recipient into memory and notifies one at a time. With
 `QUEUE_CONNECTION=sync`, publishing a notice to 500 residents blocks the request for 500
 inserts. Needs chunking and a queued notification.
+- **Fix:** `sendToSociety`/`sendToRole`/`sendToAll` hand a query to `sendToQuery()`, which walks it with `chunkById(200)`. Memory is now flat regardless of society size. Moving delivery off the request still needs `QUEUE_CONNECTION=database` plus a worker.
 
-### F-26 · Notification bell costs 2 queries on every page — `NOT STARTED`
+### F-26 · Notification bell costs 2 queries on every page — `DONE`
 `AppServiceProvider` View composer
 
 Runs an unread count and a recent-notifications query on every render, including pages
 that never display the bell.
+- **Fix:** `App\View\NotificationMenu` resolves each query on first read and is bound scoped, so both layouts share one instance.
+- **Measured:** 4 notification queries per page → 2, and none on pages that never read the bell.
 
 ---
 
@@ -293,20 +308,22 @@ Vehicles and Amenities modules entirely undocumented.
 No `node_modules`; a prebuilt `public/build` was committed in its place, so no CSS or JS
 change could actually be compiled.
 
-### F-34 · Four dead files — `NOT STARTED`
+### F-34 · Four dead files — `DONE`
 
 `app/Enums/NotificationChannel.php` (0 bytes) · `app/Http/Requests/FileUploadRequest.php`
 (0 bytes) · `app/Models/Notification.php` (0 bytes) · `resources/views/show.blade.php`
 (stale duplicate of `complaints/show.blade.php`). All verified unreferenced. Empty class
 files fatal if anything ever autoloads them.
+- **Fix:** All four removed.
 
-### F-35 · `File::scopeOrphans()` is a no-op stub — `NOT STARTED`
+### F-35 · `File::scopeOrphans()` is a no-op stub — `DONE`
 
 Returns its query unchanged with a comment saying the implementation is pending. Unused —
 the real logic lives in `FileService::cleanupOrphans()` — but it is a trap for anyone who
 finds it and assumes it filters.
+- **Fix:** Removed.
 
-### F-36 · Resident permissions may be incomplete — `NOT STARTED`
+### F-36 · Resident permissions may be incomplete — `DONE`
 `database/seeders/RolePermissionSeeder.php:43`
 
 Residents hold `visitors.update` (approve/reject) but not `visitors.create`, and
@@ -314,24 +331,40 @@ Residents hold `visitors.update` (approve/reject) but not `visitors.create`, and
 pre-register one, and can see vehicles but not register their own. Coherent if the gate
 guard registers visitors and admins register vehicles — but it should be a decision, not
 an accident. **Needs a product answer.**
+- **Resolved by decision:** residents granted `visitors.create` and `vehicles.create`. The permission alone was unsafe — `canAccessFlat()` and `findManagedFlat()` checked only society membership, which would have let a resident register against a neighbour's flat. Both now require an active `flat_residents` row, and the vehicle flat dropdown matches.
+- **Cover:** `tests/Feature/Residents/ResidentSelfServiceTest.php` (6 tests).
 
 ---
 
 ## Verification baseline
 
-Established 15 September 2026, after the `DONE` items above:
+All 36 findings closed, 15 September 2026:
 
-- **114 tests passing** (276 assertions) — was 7 passing / 100 failing
-- **232 route/role combinations** clean — 58 GET routes × 4 roles, zero server errors
-- All four role dashboards render 200
+- **167 tests passing** (380 assertions) — was 7 passing / 100 failing at the start
+- **232 route/role combinations** clean — 58 GET routes × 4 roles, zero server errors,
+  verified against both SQLite (suite) and the live MySQL database
+- All four role dashboards render 200, with every priority and status present
 - Assets build cleanly via `npm run build`
 
-### Reproducing the checks
+### The checks are now part of the suite
 
-The two harnesses that found F-05 and F-06 are not part of the test suite. Both drive the
-HTTP kernel through `artisan tinker` with `Auth::login()`:
+The two harnesses that originally found F-05 and F-06 were ad-hoc `tinker` scripts, which
+is why both bugs shipped. They are now permanent tests:
 
-1. Render `/dashboard` for one user per role, assert 200.
-2. Loop every GET route × every role, flag any 500.
+| Test | What it guards |
+|---|---|
+| `tests/Feature/Smoke/DashboardRenderTest.php` | `/dashboard` renders for all four roles, across every complaint priority and status |
+| `tests/Feature/Smoke/RouteSweepTest.php` | Every authenticated GET route, as every role, fails on any 5xx and reports the underlying exception |
 
-Worth rebuilding as real feature tests — see [T-06](audit-todo.md) in the task board.
+`RouteSweepTest` earned its place immediately: on its first run it found that
+`complaints/show.blade.php` guarded the assignment block on `assigned_to` but then
+dereferenced `assigned_at` — a different column — and dereferenced `assignedStaff`
+unguarded, which is null once the assignee is deleted. Both fixed.
+
+### Test growth
+
+| Stage | Tests |
+|---|---|
+| Before the audit | 7 passing, 100 failing |
+| After the first fix pass | 114 |
+| After closing the remaining findings | **167** |
