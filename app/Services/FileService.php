@@ -277,17 +277,42 @@ class FileService
     */
 
     /**
+     * Find files for a module whose parent entity is not in the valid set.
+     *
+     * Returns an empty collection when $validEntityIds is empty. That guard is not
+     * cosmetic: Laravel compiles whereNotIn('entity_id', []) to "1 = 1", so an empty
+     * set would match every file for the module and the caller would delete all of
+     * them. "No parents exist" must mean "delete nothing", not "delete everything".
+     *
+     * @param  string $module
+     * @param  int[]  $validEntityIds
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function findOrphans(string $module, array $validEntityIds)
+    {
+        if ($validEntityIds === []) {
+            logger()->warning(
+                "FileService: refusing to treat all {$module} files as orphans — the valid-entity list was empty."
+            );
+
+            return File::whereRaw('1 = 0')->get();
+        }
+
+        return File::where('module', $module)
+            ->whereNotIn('entity_id', $validEntityIds)
+            ->get();
+    }
+
+    /**
      * Delete orphan files (entity no longer exists)
-     * 
+     *
      * @param  string $module
      * @param  int[]  $validEntityIds
      * @return int    Number of orphans deleted
      */
     public function cleanupOrphans(string $module, array $validEntityIds): int
     {
-        $orphans = File::where('module', $module)
-            ->whereNotIn('entity_id', $validEntityIds)
-            ->get();
+        $orphans = $this->findOrphans($module, $validEntityIds);
 
         $count = 0;
 

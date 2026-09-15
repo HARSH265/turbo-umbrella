@@ -26,8 +26,6 @@ class ComplaintTicketNumberTest extends TestCase
 {
     use RefreshDatabase;
 
-    private User $systemUser;
-
     private Flat $flat;
 
     private User $resident;
@@ -174,10 +172,4 @@ class ComplaintTicketNumberTest extends TestCase
         ], $overrides));
     }
 
-    private function assignRole(User $user, string $roleSlug): void
-    {
-        $role = Role::where('slug', $roleSlug)->firstOrFail();
-        $user->roles()->syncWithoutDetaching([$role->id]);
-        $user->flushAccessCache();
-    }
 }

@@ -211,6 +211,17 @@ class VehicleController extends Controller
             $query->whereHas('tower', fn($q) => $q->where('society_id', $societyId));
         }
 
+        // Match findManagedFlat(): a resident only picks from flats they occupy, so
+        // the dropdown never offers a flat the store() call would reject.
+        $user = Auth::user();
+
+        if ($user && $user->isResident()) {
+            $query->whereHas('residents', function ($residentQuery) use ($user) {
+                $residentQuery->where('users.id', $user->id)
+                    ->where('flat_residents.is_active', true);
+            });
+        }
+
         return $query->orderBy('flat_number');
     }
 
@@ -222,6 +233,18 @@ class VehicleController extends Controller
 
         if ($societyId !== null) {
             $query->whereHas('tower', fn($q) => $q->where('society_id', $societyId));
+        }
+
+        // Residents may register vehicles only against a flat they occupy. Without
+        // this, society scope alone would let them attach a vehicle to any flat in
+        // the society, including a neighbour's.
+        $user = Auth::user();
+
+        if ($user && $user->isResident()) {
+            $query->whereHas('residents', function ($residentQuery) use ($user) {
+                $residentQuery->where('users.id', $user->id)
+                    ->where('flat_residents.is_active', true);
+            });
         }
 
         return $query->firstOrFail();

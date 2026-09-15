@@ -119,7 +119,7 @@ Supported lifecycle:
 - staff/admin add comments
 - complaint moves through statuses
 - complaint can be resolved
-- resident can reopen a resolved/closed complaint by disputing it
+- resident can reopen a **resolved** complaint by disputing it
 
 Current status values:
 
@@ -417,7 +417,11 @@ Applied to:
 
 ### Resident Complaint Dispute
 
-Residents can reopen work if a complaint is marked resolved/closed but the issue still exists.
+Residents can reopen work if a complaint is marked **resolved** but the issue still exists.
+
+Disputes apply to `resolved` complaints only. Once a society admin or super admin
+**closes** a complaint it stays closed — a recurring issue is raised as a new complaint,
+which keeps the closed state meaningful for reporting.
 
 Flow:
 
