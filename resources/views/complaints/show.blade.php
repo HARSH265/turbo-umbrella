@@ -193,8 +193,13 @@
                         @if ($complaint->assigned_to)
                             <div class="text-sm">
                                 <dt class="text-gray-500">Assigned To</dt>
-                                <dd class="font-medium text-blue-600">{{ $complaint->assignedStaff->name }}</dd>
-                                <dd class="text-xs text-gray-400">on {{ $complaint->assigned_at->format('d M, Y') }}</dd>
+                                {{-- assignedStaff is null if the assignee was deleted, and
+                                     assigned_at is a separate column from assigned_to, so
+                                     neither can be dereferenced on the assigned_to guard alone. --}}
+                                <dd class="font-medium text-blue-600">{{ $complaint->assignedStaff?->name ?? 'Unknown user' }}</dd>
+                                @if ($complaint->assigned_at)
+                                    <dd class="text-xs text-gray-400">on {{ $complaint->assigned_at->format('d M, Y') }}</dd>
+                                @endif
                             </div>
                         @endif
                     </dl>
