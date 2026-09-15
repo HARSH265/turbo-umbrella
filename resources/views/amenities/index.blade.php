@@ -10,7 +10,7 @@
             <h1 class="page-header-title">Amenities</h1>
             <p class="page-header-subtitle">Manage society amenities and facilities</p>
         </div>
-        <div class="flex gap-3">
+        <div class="page-header-actions">
             <a href="{{ route('amenities.my-bookings') }}" class="btn btn-secondary">My Bookings</a>
             @can('amenities.create')
             <a href="{{ route('amenities.create') }}" class="btn btn-primary">

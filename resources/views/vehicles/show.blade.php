@@ -10,7 +10,7 @@
             <h1 class="page-header-title">{{ $vehicle->registration_number }}</h1>
             <p class="page-header-subtitle">Vehicle Details</p>
         </div>
-        <div class="flex gap-3">
+        <div class="page-header-actions">
             @can('vehicles.update')
             <a href="{{ route('vehicles.edit', $vehicle) }}" class="btn btn-secondary">Edit</a>
             @endcan

@@ -58,6 +58,9 @@
                 <p class="text-gray-500">No activity logs found</p>
             </div>
         @else
+            {{-- Scroll container: min-w-full made this 7-column table push the page
+                 wider than a phone viewport. --}}
+            <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -101,6 +104,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
 
             <x-pagination :data="$logs" />
         @endif

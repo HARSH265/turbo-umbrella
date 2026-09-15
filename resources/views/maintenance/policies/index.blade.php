@@ -5,12 +5,12 @@
 
 @section('content')
 <div class="space-y-6">
-    <div class="flex justify-between items-center">
-        <h1 class="text-xl font-bold text-gray-900">Maintenance Policies</h1>
+    <div class="page-header">
+        <h1 class="page-header-title">Maintenance Policies</h1>
 
-        <div class="flex items-center gap-3">
+        <div class="page-header-actions">
             @if(auth()->user()->isSuperAdmin())
-                <form method="POST" action="{{ route('maintenance.policies.generate') }}" class="flex items-center gap-2">
+                <form method="POST" action="{{ route('maintenance.policies.generate') }}" class="flex flex-wrap items-center gap-2">
                     @csrf
                     <select name="society_id" required class="rounded-md border-gray-300 text-sm">
                         <option value="">Select Society</option>
@@ -41,6 +41,9 @@
     </div>
 
     <div class="bg-white shadow rounded-lg overflow-hidden">
+        {{-- overflow-hidden on the card clips the table but does not let it scroll, so
+             the columns were simply unreachable on a phone. --}}
+        <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200 text-sm">
             <thead class="bg-gray-50">
                 <tr>
@@ -103,6 +106,7 @@
                 @endforelse
             </tbody>
         </table>
+        </div>
     </div>
 
 </div>

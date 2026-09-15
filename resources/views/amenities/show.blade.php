@@ -10,7 +10,7 @@
             <h1 class="page-header-title">{{ $amenity->name }}</h1>
             <p class="page-header-subtitle">{{ ucfirst(str_replace('_', ' ', $amenity->type)) }}</p>
         </div>
-        <div class="flex gap-3">
+        <div class="page-header-actions">
             @if(Auth::user()->isSuperAdmin() || Auth::user()->isSocietyAdmin())
             <a href="{{ route('amenities.bookings', $amenity) }}" class="btn btn-secondary">All Bookings</a>
             @endif

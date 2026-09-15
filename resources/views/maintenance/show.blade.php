@@ -61,6 +61,9 @@
     <div class="bg-white shadow rounded-lg p-6">
         <h2 class="text-lg font-semibold mb-4">Payment History</h2>
 
+        {{-- min-w-full forces the table at least as wide as its content, so without a
+             scroll container it pushed the whole page wider than a phone viewport. --}}
+        <div class="overflow-x-auto">
         <table class="min-w-full text-sm divide-y divide-gray-200">
             <thead>
                 <tr>
@@ -89,6 +92,7 @@
                 @endforelse
             </tbody>
         </table>
+        </div>
     </div>
 
 </div>
