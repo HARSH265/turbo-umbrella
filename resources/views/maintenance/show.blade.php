@@ -16,7 +16,7 @@
 
         <a href="{{ route('maintenance.index') }}"
            class="btn btn-secondary">
-            <- Back to Maintenance
+            ← Back to Maintenance
         </a>
     </div>
 
@@ -58,41 +58,25 @@
         </div>
     </div>
 
-    <div class="bg-white shadow rounded-lg p-6">
-        <h2 class="text-lg font-semibold mb-4">Payment History</h2>
+    <div class="space-y-4">
+        <h2 class="text-lg font-semibold">Payment History</h2>
 
-        {{-- min-w-full forces the table at least as wide as its content, so without a
-             scroll container it pushed the whole page wider than a phone viewport. --}}
-        <div class="overflow-x-auto">
-        <table class="min-w-full text-sm divide-y divide-gray-200">
-            <thead>
+        {{-- x-data-table rather than a bespoke table, so each payment becomes a labelled
+             card on phones instead of a row that has to be scrolled sideways. --}}
+        <x-data-table :headers="['Date', 'Amount', 'Mode', 'Transaction ID', 'Remarks']"
+                      :data="$maintenance->payments"
+                      emptyMessage="No payments recorded yet.">
+            @forelse($maintenance->payments as $payment)
                 <tr>
-                    <th class="px-4 py-2 text-left">Date</th>
-                    <th class="px-4 py-2 text-left">Amount</th>
-                    <th class="px-4 py-2 text-left">Mode</th>
-                    <th class="px-4 py-2 text-left">Transaction ID</th>
-                    <th class="px-4 py-2 text-left">Remarks</th>
+                    <td>{{ $payment->payment_date?->format('d M Y') }}</td>
+                    <td class="font-medium text-emerald-600">Rs. {{ number_format($payment->amount_paid, 2) }}</td>
+                    <td>{{ $payment->payment_mode ? ucfirst(str_replace('_', ' ', $payment->payment_mode)) : '—' }}</td>
+                    <td>{{ $payment->transaction_id ?: '—' }}</td>
+                    <td>{{ $payment->remarks ?: '—' }}</td>
                 </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200">
-                @forelse($maintenance->payments as $payment)
-                <tr>
-                    <td class="px-4 py-2">{{ $payment->payment_date?->format('d M Y') }}</td>
-                    <td class="px-4 py-2 text-green-600">Rs. {{ number_format($payment->amount_paid, 2) }}</td>
-                    <td class="px-4 py-2">{{ $payment->payment_mode }}</td>
-                    <td class="px-4 py-2">{{ $payment->transaction_id }}</td>
-                    <td class="px-4 py-2">{{ $payment->remarks }}</td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="5" class="px-4 py-4 text-center text-gray-500">
-                        No payments recorded yet.
-                    </td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
-        </div>
+            @empty
+            @endforelse
+        </x-data-table>
     </div>
 
 </div>

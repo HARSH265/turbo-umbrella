@@ -51,63 +51,27 @@
         </form>
     </div>
 
-    <!-- Logs Table -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        @if($logs->isEmpty())
-            <div class="text-center py-12">
-                <p class="text-gray-500">No activity logs found</p>
-            </div>
-        @else
-            {{-- Scroll container: min-w-full made this 7-column table push the page
-                 wider than a phone viewport. --}}
-            <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Module</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Entity ID</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP Address</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($logs as $log)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $log->user?->name ?? 'System' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                @if($log->action === 'create') bg-green-100 text-green-800
-                                @elseif($log->action === 'update') bg-blue-100 text-blue-800
-                                @elseif($log->action === 'delete') bg-red-100 text-red-800
-                                @else bg-gray-100 text-gray-800
-                                @endif">
-                                {{ ucfirst($log->action) }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {{ ucfirst($log->module) }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {{ $log->entity_id ?? '-' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {{ $log->ip_address ?? '-' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {{ $log->created_at->format('d M Y, h:i A') }}
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-            </div>
 
-            <x-pagination :data="$logs" />
-        @endif
-    </div>
+    {{-- x-data-table: each log entry becomes a labelled card on phones rather than a
+         six-column row that has to be scrolled sideways. --}}
+    <x-data-table :headers="['User', 'Action', 'Module', 'Entity ID', 'IP Address', 'Date']"
+                  :data="$logs"
+                  emptyMessage="No activity logs found">
+        @forelse($logs as $log)
+            <tr>
+                <td class="font-medium">{{ $log->user?->name ?? 'System' }}</td>
+                <td>
+                    <span class="badge {{ $log->action === 'create' ? 'badge-success' : ($log->action === 'update' ? 'badge-info' : ($log->action === 'delete' ? 'badge-danger' : 'badge-gray')) }}">
+                        {{ ucfirst($log->action) }}
+                    </span>
+                </td>
+                <td>{{ ucfirst($log->module) }}</td>
+                <td>{{ $log->entity_id ?? '—' }}</td>
+                <td>{{ $log->ip_address ?? '—' }}</td>
+                <td>{{ $log->created_at->format('d M Y, h:i A') }}</td>
+            </tr>
+        @empty
+        @endforelse
+    </x-data-table>
 </div>
 @endsection

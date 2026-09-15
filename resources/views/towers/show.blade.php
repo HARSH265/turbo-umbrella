@@ -57,50 +57,26 @@
             @endcan
         </div>
         
-        @if($tower->flats->isEmpty())
-            <div class="p-12 text-center text-gray-500">
-                No flats in this tower yet
-            </div>
-        @else
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Flat Number</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Floor</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @foreach($tower->flats as $flat)
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {{ $flat->flat_number }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                {{ $flat->floor_number }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                {{ $flat->type }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $flat->occupancy_status === 'occupied' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
-                                    {{ ucfirst($flat->occupancy_status) }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <a href="{{ route('flats.show', $flat) }}" class="text-blue-600 hover:text-blue-800">
-                                    View
-                                </a>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
+        <x-data-table :headers="['Flat Number', 'Floor', 'Type', 'Status', 'Actions']"
+                      :data="$tower->flats"
+                      emptyMessage="No flats in this tower yet">
+            @forelse($tower->flats as $flat)
+                <tr>
+                    <td class="font-medium">{{ $flat->flat_number }}</td>
+                    <td>{{ $flat->floor_number }}</td>
+                    <td>{{ $flat->type }}</td>
+                    <td>
+                        <span class="badge {{ $flat->occupancy_status === 'occupied' ? 'badge-success' : 'badge-gray' }}">
+                            {{ ucfirst($flat->occupancy_status) }}
+                        </span>
+                    </td>
+                    <td class="text-right">
+                        <a href="{{ route('flats.show', $flat) }}" class="btn btn-ghost btn-sm">View</a>
+                    </td>
+                </tr>
+            @empty
+            @endforelse
+        </x-data-table>
     </div>
 </div>
 @endsection

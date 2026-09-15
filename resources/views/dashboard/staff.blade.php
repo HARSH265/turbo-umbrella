@@ -63,75 +63,41 @@
     <div class="bg-white rounded-lg shadow">
         <div class="p-6">
             <h2 class="text-lg font-semibold text-gray-900 mb-4">My Assigned Complaints</h2>
-            
-            @if($stats['assigned_complaints']->isEmpty())
-                <p class="text-center text-gray-500 py-8">No complaints assigned yet</p>
-            @else
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ticket #</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Flat</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach($stats['assigned_complaints'] as $complaint)
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    {{ $complaint->ticket_number }}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-gray-900">
-                                    {{ Str::limit($complaint->subject, 40) }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                    {{ $complaint->flat->full_name }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                        @if($complaint->priority->value === 'urgent') bg-red-100 text-red-800
-                                        @elseif($complaint->priority->value === 'high') bg-orange-100 text-orange-800
-                                        @elseif($complaint->priority->value === 'medium') bg-yellow-100 text-yellow-800
-                                        @else bg-gray-100 text-gray-800
-                                        @endif">
-                                        {{ ucfirst($complaint->priority->value) }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                        @if($complaint->status->value === 'open') bg-red-100 text-red-800
-                                        @elseif($complaint->status->value === 'in_progress') bg-yellow-100 text-yellow-800
-                                        @else bg-green-100 text-green-800
-                                        @endif">
-                                        {{ ucfirst(str_replace('_', ' ', $complaint->status->value)) }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                    {{ $complaint->created_at->format('d M Y') }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    <a href="{{ route('complaints.show', $complaint) }}" class="text-blue-600 hover:text-blue-800">
-                                        View
-                                    </a>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Pagination -->
-                @if($stats['assigned_complaints']->total() > 0)
-                    <div class="card overflow-hidden mt-4">
-                        <x-pagination :data="$stats['assigned_complaints']" />
-                    </div>
-                @endif
-            @endif
+            {{-- x-data-table handles the empty state, the cards on phones, and the
+                 pagination, so none of that is hand-written here. --}}
+            <x-data-table :headers="['Ticket #', 'Subject', 'Flat', 'Priority', 'Status', 'Created', 'Action']"
+                          :data="$stats['assigned_complaints']"
+                          emptyMessage="No complaints assigned yet">
+                @forelse($stats['assigned_complaints'] as $complaint)
+                    <tr>
+                        <td class="font-medium">{{ $complaint->ticket_number }}</td>
+                        <td>{{ Str::limit($complaint->subject, 40) }}</td>
+                        <td>{{ $complaint->flat->full_name }}</td>
+                        <td>
+                            <span class="badge
+                                @if($complaint->priority->value === 'urgent') badge-danger
+                                @elseif($complaint->priority->value === 'high') badge-warning
+                                @elseif($complaint->priority->value === 'medium') badge-info
+                                @else badge-gray @endif">
+                                {{ ucfirst($complaint->priority->value) }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge
+                                @if($complaint->status->value === 'open') badge-danger
+                                @elseif($complaint->status->value === 'in_progress') badge-warning
+                                @else badge-success @endif">
+                                {{ ucfirst(str_replace('_', ' ', $complaint->status->value)) }}
+                            </span>
+                        </td>
+                        <td>{{ $complaint->created_at->format('d M Y') }}</td>
+                        <td class="text-right">
+                            <a href="{{ route('complaints.show', $complaint) }}" class="btn btn-ghost btn-sm">View</a>
+                        </td>
+                    </tr>
+                @empty
+                @endforelse
+            </x-data-table>
         </div>
     </div>
 

@@ -73,45 +73,26 @@
                 <h2 class="text-lg font-semibold text-gray-900">Pending Maintenance</h2>
                 <span class="text-sm text-red-600 font-medium">{{ $stats['pending_maintenance']->count() }} pending</span>
             </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @foreach($stats['pending_maintenance'] as $maintenance)
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ \Carbon\Carbon::parse($maintenance->month)->format('F Y') }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                ₹{{ number_format($maintenance->total_due, 2) }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                {{ $maintenance->due_date->format('d M Y') }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                    {{ $maintenance->status->value === 'overdue' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                    {{ ucfirst(str_replace('_', ' ', $maintenance->status->value)) }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <a href="{{ route('maintenance.payment', $maintenance) }}" class="text-blue-600 hover:text-blue-800">
-                                    Pay Now
-                                </a>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+            <x-data-table :headers="['Month', 'Amount', 'Due Date', 'Status', 'Action']"
+                          :data="$stats['pending_maintenance']"
+                          emptyMessage="Nothing outstanding">
+                @forelse($stats['pending_maintenance'] as $maintenance)
+                    <tr>
+                        <td>{{ \Carbon\Carbon::parse($maintenance->month)->format('F Y') }}</td>
+                        <td class="font-medium">₹{{ number_format($maintenance->total_due, 2) }}</td>
+                        <td>{{ $maintenance->due_date->format('d M Y') }}</td>
+                        <td>
+                            <span class="badge {{ $maintenance->status->value === 'overdue' ? 'badge-danger' : 'badge-warning' }}">
+                                {{ ucfirst(str_replace('_', ' ', $maintenance->status->value)) }}
+                            </span>
+                        </td>
+                        <td class="text-right">
+                            <a href="{{ route('maintenance.payment', $maintenance) }}" class="btn btn-ghost btn-sm">Pay Now</a>
+                        </td>
+                    </tr>
+                @empty
+                @endforelse
+            </x-data-table>
         </div>
     </div>
     @endif

@@ -7,7 +7,7 @@
 <div class="max-w-3xl mx-auto">
     <div class="mb-6">
         <a href="{{ route('visitors.index') }}" class="btn btn-secondary">
-            <- Back to Visitors
+            ← Back to Visitors
         </a>
     </div>
 

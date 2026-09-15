@@ -6,14 +6,14 @@
 @section('content')
 <div class="max-w-6xl mx-auto space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
+    <div class="page-header">
         <a href="{{ route('flats.index') }}"
             class="btn btn-secondary">
             ← Back to Flats
         </a>
-        <div class="flex items-center space-x-3">
+        <div class="page-header-actions">
             @can('flats.update')
-            <a href="{{ route('flats.assign-residents', $flat) }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <a href="{{ route('flats.assign-residents', $flat) }}" class="btn btn-primary">
                 <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                 </svg>
@@ -75,7 +75,7 @@
         @else
             <div class="divide-y divide-gray-200">
                 @foreach($flat->activeResidents as $resident)
-                <div class="p-6 flex items-center justify-between hover:bg-gray-50">
+                <div class="p-6 flex flex-wrap items-center justify-between gap-4 hover:bg-gray-50">
                     <div class="flex items-center space-x-4">
                         <div class="h-12 w-12 rounded-full bg-gray-900 flex items-center justify-center text-white font-semibold">
                             {{ substr($resident->name, 0, 1) }}
@@ -99,7 +99,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="flex items-center space-x-3">
+                    <div class="flex flex-wrap items-center gap-3">
                         @can('users.view')
                         <a href="{{ route('users.show', $resident) }}" class="text-blue-600 hover:text-blue-800 text-sm">
                             View Profile
@@ -131,7 +131,7 @@
         </div>
         <div class="divide-y divide-gray-200">
             @foreach($flat->vehicles as $vehicle)
-            <div class="p-6 flex items-center justify-between hover:bg-gray-50">
+            <div class="p-6 flex flex-wrap items-center justify-between gap-4 hover:bg-gray-50">
                 <div class="flex items-center space-x-4">
                     <div class="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center">
                         <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,51 +166,29 @@
         <div class="p-6 border-b">
             <h2 class="text-lg font-semibold text-gray-900">Pending Maintenance</h2>
         </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+        <div class="px-6 pb-6">
+            <x-data-table :headers="['Month', 'Amount', 'Late Fee', 'Total', 'Due Date', 'Status', 'Action']"
+                          :data="$flat->pendingMaintenances"
+                          emptyMessage="Nothing outstanding">
+                @forelse($flat->pendingMaintenances as $maintenance)
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Late Fee</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($flat->pendingMaintenances as $maintenance)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ \Carbon\Carbon::parse($maintenance->month)->format('F Y') }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ₹{{ number_format($maintenance->amount, 2) }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600">
-                            ₹{{ number_format($maintenance->late_fee, 2) }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                            ₹{{ number_format($maintenance->total_due, 2) }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {{ $maintenance->due_date->format('d M Y') }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $maintenance->status->value === 'overdue' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
+                        <td>{{ \Carbon\Carbon::parse($maintenance->month)->format('F Y') }}</td>
+                        <td>₹{{ number_format($maintenance->amount, 2) }}</td>
+                        <td class="text-red-600">₹{{ number_format($maintenance->late_fee, 2) }}</td>
+                        <td class="font-semibold">₹{{ number_format($maintenance->total_due, 2) }}</td>
+                        <td>{{ $maintenance->due_date->format('d M Y') }}</td>
+                        <td>
+                            <span class="badge {{ $maintenance->status->value === 'overdue' ? 'badge-danger' : 'badge-warning' }}">
                                 {{ ucfirst(str_replace('_', ' ', $maintenance->status->value)) }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <a href="{{ route('maintenance.show', $maintenance) }}" class="text-blue-600 hover:text-blue-800">
-                                View
-                            </a>
+                        <td class="text-right">
+                            <a href="{{ route('maintenance.show', $maintenance) }}" class="btn btn-ghost btn-sm">View</a>
                         </td>
                     </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                @empty
+                @endforelse
+            </x-data-table>
         </div>
     </div>
     @endif
@@ -275,38 +253,25 @@
                 View All →
             </a>
         </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+        <div class="px-6 pb-6">
+            <x-data-table :headers="['Name', 'Phone', 'Purpose', 'Entry Time', 'Status']"
+                          :data="$flat->visitors->take(5)"
+                          emptyMessage="No recent visitors">
+                @forelse($flat->visitors->take(5) as $visitor)
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purpose</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Entry Time</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($flat->visitors->take(5) as $visitor)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $visitor->name }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $visitor->phone }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $visitor->purpose }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {{ $visitor->entry_time->format('d M, h:i A') }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                @if($visitor->exit_time) bg-gray-100 text-gray-800
-                                @else bg-green-100 text-green-800
-                                @endif">
+                        <td class="font-medium">{{ $visitor->name }}</td>
+                        <td>{{ $visitor->phone }}</td>
+                        <td>{{ $visitor->purpose }}</td>
+                        <td>{{ $visitor->entry_time->format('d M, h:i A') }}</td>
+                        <td>
+                            <span class="badge {{ $visitor->exit_time ? 'badge-gray' : 'badge-success' }}">
                                 {{ $visitor->exit_time ? 'Exited' : 'Inside' }}
                             </span>
                         </td>
                     </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                @empty
+                @endforelse
+            </x-data-table>
         </div>
     </div>
     @endif

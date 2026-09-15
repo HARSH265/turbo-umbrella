@@ -16,7 +16,7 @@
 
         <a href="{{ route('maintenance.show', $maintenance) }}"
            class="btn btn-secondary">
-            <- Back to Maintenance
+            ← Back to Maintenance
         </a>
     </div>
 
