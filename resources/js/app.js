@@ -1,4 +1,5 @@
 import './bootstrap';
+import './tappable-rows';
 
 import Alpine from 'alpinejs';
 

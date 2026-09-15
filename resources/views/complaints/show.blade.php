@@ -6,13 +6,15 @@
 @section('content')
     <div class="max-w-5xl mx-auto space-y-6">
         <!-- Header -->
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">{{ $complaint->ticket_number }}</h1>
+        <div class="page-header">
+            <div class="min-w-0">
+                {{-- Smaller on phones: at text-3xl a ticket number like CMP-20260912-0001
+                     broke across three lines and squeezed the Back button. --}}
+                <h1 class="text-xl font-bold text-gray-900 sm:text-3xl">{{ $complaint->ticket_number }}</h1>
                 <p class="mt-1 text-sm text-gray-600">Created {{ $complaint->created_at->format('d M Y, h:i A') }}</p>
             </div>
             <a href="{{ route('complaints.index') }}"
-                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                class="inline-flex shrink-0 items-center whitespace-nowrap px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                 ← Back to List
             </a>
         </div>
@@ -147,17 +149,20 @@
                             <textarea id="comment" name="comment" rows="4" required placeholder="Write your message here..."
                                 class="mb-3 w-full rounded-xl border-brand-200 text-sm text-brand-800 placeholder:text-brand-300 focus:border-brand-500 focus:ring-brand-500/10"></textarea>
 
-                            <div class="flex flex-wrap items-center justify-between gap-4">
-                                <div class="flex items-center space-x-4">
+                            {{-- No flex-wrap: the checkbox and the submit button stay on one
+                                 row at every width. Tighter padding on phones keeps them
+                                 side by side instead of stacking. --}}
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="flex min-w-0 items-center">
                                     @if (!auth()->user()->isResident())
-                                        <label class="flex items-center rounded-full border border-brand-200 bg-brand-50 px-3 py-2">
+                                        <label class="flex items-center rounded-full border border-brand-200 bg-brand-50 px-2.5 py-2 sm:px-3">
                                             <input type="checkbox" name="is_internal" value="1"
                                                 class="rounded border-brand-300 text-amber-600 focus:ring-amber-500/20">
-                                            <span class="ml-2 text-xs font-bold uppercase tracking-wide text-brand-600">Internal Note</span>
+                                            <span class="ml-2 whitespace-nowrap text-[11px] font-bold uppercase tracking-wide text-brand-600 sm:text-xs">Internal Note</span>
                                         </label>
                                     @endif
                                 </div>
-                                <x-primary-button class="rounded-xl px-6 py-3 text-[11px] font-black">
+                                <x-primary-button class="shrink-0 whitespace-nowrap rounded-xl px-4 py-3 text-[11px] font-black sm:px-6">
                                     Post Update
                                 </x-primary-button>
                             </div>

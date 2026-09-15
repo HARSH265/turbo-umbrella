@@ -18,10 +18,12 @@
     </div>
 
     <x-card header="Notice Details">
-        <div class="flex items-start justify-between gap-6">
-            <div>
-                <div class="flex items-center gap-3">
-                    <h1 class="text-3xl font-black text-brand-900 tracking-tight">{{ $notice->title }}</h1>
+        {{-- Stacks on phones. Side by side, the fixed-width status badges squeezed the
+             title into a column so narrow it broke one word per line. --}}
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-3">
+                    <h1 class="text-2xl font-black text-brand-900 tracking-tight sm:text-3xl">{{ $notice->title }}</h1>
                     @if($notice->is_pinned)
                         <span class="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-amber-800">
                             Pinned
@@ -32,7 +34,7 @@
                     {{ $notice->isGlobal() ? 'Global Notice' : ($notice->society?->name ?? 'Society Notice') }}
                 </p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex shrink-0 flex-wrap items-center gap-2">
                 <span class="px-3 py-1 text-sm font-semibold rounded-full {{ $notice->priority->badgeClass() }}">
                     {{ $notice->priority->label() }}
                 </span>

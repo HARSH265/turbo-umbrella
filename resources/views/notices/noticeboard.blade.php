@@ -5,12 +5,14 @@
 
 @section('content')
 <div class="max-w-6xl mx-auto space-y-6">
-    <div class="flex items-center justify-between">
+    <div class="page-header">
         <div>
-            <h1 class="text-3xl font-black text-brand-900 tracking-tight">Notice Board</h1>
+            <h1 class="text-2xl font-black text-brand-900 tracking-tight sm:text-3xl">Notice Board</h1>
             <p class="mt-1 text-sm text-brand-500">Latest announcements and important updates</p>
         </div>
-        <a href="{{ route('notices.index') }}" class="inline-flex items-center rounded-xl border border-brand-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-brand-700 hover:bg-brand-50">
+        {{-- uppercase + tracking-widest stretched "VIEW ALL NOTICES" so wide it wrapped
+             inside its own box. Normal case and tighter tracking keep it on one line. --}}
+        <a href="{{ route('notices.index') }}" class="inline-flex shrink-0 items-center whitespace-nowrap rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50">
             View All Notices
         </a>
     </div>

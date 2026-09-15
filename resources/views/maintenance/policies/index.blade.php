@@ -14,7 +14,7 @@
                     @csrf
                     <select name="society_id" required class="rounded-md border-gray-300 text-sm">
                         <option value="">Select Society</option>
-                        @foreach($policies->pluck('society')->filter()->unique('id') as $society)
+                        @foreach($societies as $society)
                             <option value="{{ $society->id }}">{{ $society->name }}</option>
                         @endforeach
                     </select>
@@ -40,74 +40,55 @@
         </div>
     </div>
 
-    <div class="bg-white shadow rounded-lg overflow-hidden">
-        {{-- overflow-hidden on the card clips the table but does not let it scroll, so
-             the columns were simply unreachable on a phone. --}}
-        <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 text-sm">
-            <thead class="bg-gray-50">
-                <tr>
-                    @if(auth()->user()->isSuperAdmin())
-                        <th class="px-4 py-3 text-left">Society</th>
-                    @endif
-                    <th class="px-4 py-3 text-left">Name</th>
-                    <th class="px-4 py-3 text-left">Billing Cycle</th>
-                    <th class="px-4 py-3 text-left">Calculation</th>
-                    <th class="px-4 py-3 text-left">Grace Days</th>
-                    <th class="px-4 py-3 text-left">Effective From</th>
-                    <th class="px-4 py-3 text-left">Active</th>
-                    <th class="px-4 py-3 text-right">Action</th>
-                </tr>
-            </thead>
+    @php
+        $isSuperAdmin = auth()->user()->isSuperAdmin();
+        $canActivate = auth()->user()->hasPermission('maintenance.create')
+            || auth()->user()->hasPermission('maintenance.policy.create')
+            || $isSuperAdmin
+            || auth()->user()->isSocietyAdmin();
 
-            <tbody class="divide-y divide-gray-200">
-                @forelse($policies as $policy)
-                    <tr>
-                        @if(auth()->user()->isSuperAdmin())
-                            <td class="px-4 py-3">{{ $policy->society?->name ?? 'N/A' }}</td>
+        $headers = $isSuperAdmin
+            ? ['Society', 'Name', 'Billing Cycle', 'Calculation', 'Grace Days', 'Effective From', 'Active', 'Action']
+            : ['Name', 'Billing Cycle', 'Calculation', 'Grace Days', 'Effective From', 'Active', 'Action'];
+    @endphp
+
+    {{-- x-data-table rather than a bespoke table: it collapses each policy into a card
+         on phones and keeps the pagination styling consistent with every other list. --}}
+    <x-data-table :headers="$headers" :data="$policies" emptyMessage="No maintenance policies found.">
+        @forelse($policies as $policy)
+            <tr>
+                @if($isSuperAdmin)
+                    <td>{{ $policy->society?->name ?? 'N/A' }}</td>
+                @endif
+                <td class="font-medium">{{ $policy->template->name }}</td>
+                <td>{{ ucfirst(str_replace('_', ' ', $policy->template->billing_cycle->value)) }}</td>
+                <td>{{ ucfirst(str_replace('_', ' ', $policy->template->calculation_type->value)) }}</td>
+                <td>{{ $policy->template->grace_days }}</td>
+                <td>{{ $policy->effective_from?->format('d M Y') ?? '—' }}</td>
+                <td>
+                    @if($policy->is_active)
+                        <span class="badge badge-success">Active</span>
+                    @else
+                        <span class="badge badge-gray">Inactive</span>
+                    @endif
+                </td>
+                <td class="text-right">
+                    <div class="inline-flex items-center gap-3">
+                        <a href="{{ route('maintenance.policies.show', $policy) }}"
+                           class="text-accent-600 hover:underline">View</a>
+
+                        @if(!$policy->is_active && $canActivate)
+                            <form method="POST" action="{{ route('maintenance.policies.activate', $policy) }}">
+                                @csrf
+                                <button class="text-brand-700 hover:underline">Activate</button>
+                            </form>
                         @endif
-                        <td class="px-4 py-3">{{ $policy->template->name }}</td>
-                        <td class="px-4 py-3">{{ ucfirst(str_replace('_', ' ', $policy->template->billing_cycle->value)) }}</td>
-                        <td class="px-4 py-3">{{ ucfirst(str_replace('_', ' ', $policy->template->calculation_type->value)) }}</td>
-                        <td class="px-4 py-3">{{ $policy->template->grace_days }}</td>
-                        <td class="px-4 py-3">{{ $policy->effective_from?->format('d M Y') ?? '-' }}</td>
-                        <td class="px-4 py-3">
-                            @if($policy->is_active)
-                                <span class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">Active</span>
-                            @else
-                                <span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">Inactive</span>
-                            @endif
-                        </td>
-                        <td class="px-4 py-3 text-right">
-                            @if(
-                                !$policy->is_active
-                                && (
-                                    auth()->user()->hasPermission('maintenance.create')
-                                    || auth()->user()->hasPermission('maintenance.policy.create')
-                                    || auth()->user()->isSuperAdmin()
-                                    || auth()->user()->isSocietyAdmin()
-                                )
-                            )
-                                <form method="POST" action="{{ route('maintenance.policies.activate', $policy) }}">
-                                    @csrf
-                                    <button class="text-accent-600 hover:underline text-xs">
-                                        Activate
-                                    </button>
-                                </form>
-                            @endif
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="{{ auth()->user()->isSuperAdmin() ? 8 : 7 }}" class="px-4 py-6 text-center text-gray-500">
-                            No maintenance policies found.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-        </div>
-    </div>
+                    </div>
+                </td>
+            </tr>
+        @empty
+        @endforelse
+    </x-data-table>
 
 </div>
 @endsection

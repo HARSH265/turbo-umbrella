@@ -36,7 +36,10 @@
         <div x-show="sidebarOpen"
              x-cloak
              @click.away="sidebarOpen = false"
-             class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 lg:hidden"
+             {{-- flex flex-col so the nav's flex-1 can expand and push the user block to
+                  the bottom, matching the desktop sidebar. Without it the profile sat
+                  directly under the menu with empty space beneath. --}}
+             class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-gray-900 lg:hidden"
              x-transition:enter="transition ease-in-out duration-300 transform"
              x-transition:enter-start="-translate-x-full"
              x-transition:enter-end="translate-x-0"

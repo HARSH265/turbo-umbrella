@@ -33,6 +33,36 @@
                            class="mt-1 block w-full rounded-md border-gray-300 text-sm">
                 </div>
 
+                {{-- Wording that appears on the policy document residents read. All
+                     optional: a policy is still valid with numbers alone. --}}
+                <div>
+                    <label class="text-sm">Purpose <span class="text-gray-400">(optional)</span></label>
+                    <textarea name="description" rows="3" maxlength="2000"
+                              placeholder="Why this charge exists and who it applies to."
+                              class="mt-1 block w-full rounded-md border-gray-300 text-sm">{{ old('description') }}</textarea>
+                </div>
+
+                <div>
+                    <label class="text-sm">What the charge covers <span class="text-gray-400">(optional)</span></label>
+                    <textarea name="inclusions" rows="3" maxlength="2000"
+                              placeholder="e.g. common-area lighting, lift maintenance, security, housekeeping, water."
+                              class="mt-1 block w-full rounded-md border-gray-300 text-sm">{{ old('inclusions') }}</textarea>
+                </div>
+
+                <div>
+                    <label class="text-sm">Payment terms <span class="text-gray-400">(optional)</span></label>
+                    <textarea name="payment_terms" rows="3" maxlength="2000"
+                              placeholder="Accepted payment methods, bank details, who to contact about a bill."
+                              class="mt-1 block w-full rounded-md border-gray-300 text-sm">{{ old('payment_terms') }}</textarea>
+                </div>
+
+                <div>
+                    <label class="text-sm">Additional notes <span class="text-gray-400">(optional)</span></label>
+                    <textarea name="notes" rows="2" maxlength="2000"
+                              placeholder="Anything else the committee wants on record."
+                              class="mt-1 block w-full rounded-md border-gray-300 text-sm">{{ old('notes') }}</textarea>
+                </div>
+
                 <div>
                     <label class="text-sm">Billing Cycle</label>
                     <select name="billing_cycle" required

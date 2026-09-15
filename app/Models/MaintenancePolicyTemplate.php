@@ -14,6 +14,10 @@ class MaintenancePolicyTemplate extends Model
 
     protected $fillable = [
         'name',
+        'description',
+        'inclusions',
+        'payment_terms',
+        'notes',
         'billing_cycle',
         'calculation_type',
         'base_amount',

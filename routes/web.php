@@ -60,6 +60,8 @@ Route::middleware(['auth', 'verified', 'user.active'])->group(function () {
         Route::get('/create', [MaintenancePolicyController::class, 'create'])->name('create');
         Route::post('/', [MaintenancePolicyController::class, 'store'])->name('store');
         Route::post('/generate', [MaintenancePolicyController::class, 'manualGenerate'])->name('generate');
+        // Numeric constraint so '/create' is never captured as a policy id.
+        Route::get('/{policy}', [MaintenancePolicyController::class, 'show'])->whereNumber('policy')->name('show');
         Route::post('/{policy}/activate', [MaintenancePolicyController::class, 'activate'])->name('activate');
     });
 

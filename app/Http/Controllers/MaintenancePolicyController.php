@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\BillingCycle;
 use App\Enums\CalculationType;
 use App\Enums\LateFeeType;
+use App\Models\Flat;
 use App\Models\MaintenancePolicy;
 use App\Models\MaintenancePolicyTemplate;
 use App\Models\Society;
@@ -40,7 +41,7 @@ class MaintenancePolicyController extends Controller
         if ($user->isSuperAdmin()) {
             $policies = MaintenancePolicy::with('template', 'society')
                 ->latest()
-                ->get();
+                ->paginate(config('pagination.per_page'));
         } else {
             if (!$user->society_id) {
                 abort(403, 'User not assigned to any society.');
@@ -49,10 +50,16 @@ class MaintenancePolicyController extends Controller
             $policies = MaintenancePolicy::with('template')
                 ->forSociety($user->society_id)
                 ->latest()
-                ->get();
+                ->paginate(config('pagination.per_page'));
         }
 
-        return view('maintenance.policies.index', compact('policies'));
+        // Listed separately rather than plucked off $policies: now that the list is
+        // paginated, plucking would only offer societies present on the current page.
+        $societies = $user->isSuperAdmin()
+            ? Society::active()->orderBy('name')->get()
+            : collect();
+
+        return view('maintenance.policies.index', compact('policies', 'societies'));
     }
 
     public function create()
@@ -76,6 +83,10 @@ class MaintenancePolicyController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:2000',
+            'inclusions' => 'nullable|string|max:2000',
+            'payment_terms' => 'nullable|string|max:2000',
+            'notes' => 'nullable|string|max:2000',
             'society_id' => 'nullable|exists:societies,id',
             'billing_cycle' => ['required', new Enum(BillingCycle::class)],
             'calculation_type' => ['required', new Enum(CalculationType::class)],
@@ -125,6 +136,10 @@ class MaintenancePolicyController extends Controller
 
         $template = MaintenancePolicyTemplate::create([
             'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+            'inclusions' => $validated['inclusions'] ?? null,
+            'payment_terms' => $validated['payment_terms'] ?? null,
+            'notes' => $validated['notes'] ?? null,
             'billing_cycle' => $validated['billing_cycle'],
             'calculation_type' => $validated['calculation_type'],
             'base_amount' => $validated['base_amount'] ?? null,
@@ -149,6 +164,36 @@ class MaintenancePolicyController extends Controller
         return redirect()
             ->route('maintenance.policies.index')
             ->with('success', 'New maintenance policy activated.');
+    }
+
+    /**
+     * Render a single policy as a readable document.
+     */
+    public function show(MaintenancePolicy $policy)
+    {
+        if (!$this->canViewPolicies()) {
+            abort(403);
+        }
+
+        $user = Auth::user();
+
+        if (!$user->isSuperAdmin() && $policy->society_id !== $user->society_id) {
+            abort(403, 'This policy belongs to another society.');
+        }
+
+        $policy->load(['template', 'society', 'creator', 'updater']);
+
+        // Flat types the society actually has, so a FLAT_TYPE policy shows the rates
+        // that apply here rather than every type the template happens to define.
+        $flatTypes = Flat::query()
+            ->whereHas('tower', fn ($q) => $q->where('society_id', $policy->society_id))
+            ->select('type')
+            ->distinct()
+            ->orderBy('type')
+            ->pluck('type')
+            ->all();
+
+        return view('maintenance.policies.show', compact('policy', 'flatTypes'));
     }
 
     public function activate(MaintenancePolicy $policy)
