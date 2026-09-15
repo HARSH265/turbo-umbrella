@@ -192,3 +192,24 @@ php artisan test
 Two smoke tests guard the whole surface:
 `tests/Feature/Smoke/RouteSweepTest.php` walks every GET route as every role and fails
 on any 5xx; `tests/Feature/Smoke/DashboardRenderTest.php` renders every role's dashboard.
+
+---
+
+## Form controls in a header or toolbar
+
+`.form-input` and `.form-select` are `w-full`, which is right in a form column but wrong
+in a page header — a full-width select eats the whole row and pushes the button beside it
+onto a second line, over the content below.
+
+Add `.form-inline` for a control that lives in a toolbar:
+
+```blade
+<div class="page-header-actions">
+    <form method="POST" action="..." class="flex flex-wrap items-center gap-2">
+        @csrf
+        <select name="society_id" class="form-select form-inline">...</select>
+        <button class="btn btn-secondary">Generate Current Month</button>
+    </form>
+    <a href="..." class="btn btn-primary">Create Policy</a>
+</div>
+```

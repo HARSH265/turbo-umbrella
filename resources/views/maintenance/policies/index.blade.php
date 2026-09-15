@@ -12,7 +12,7 @@
             @if(auth()->user()->isSuperAdmin())
                 <form method="POST" action="{{ route('maintenance.policies.generate') }}" class="flex flex-wrap items-center gap-2">
                     @csrf
-                    <select name="society_id" required class="form-select">
+                    <select name="society_id" required class="form-select form-inline">
                         <option value="">Select Society</option>
                         @foreach($societies as $society)
                             <option value="{{ $society->id }}">{{ $society->name }}</option>

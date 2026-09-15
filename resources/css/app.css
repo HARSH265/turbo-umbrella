@@ -383,6 +383,14 @@
     @apply min-h-[6rem] resize-y;
 }
 
+/* Add alongside .form-input/.form-select for a control that sits in a page header or
+   toolbar rather than a form column. The base classes are w-full, which is right in a
+   form but eats the whole row in a header — it pushed the neighbouring button onto a
+   second line and over the table below. */
+.form-inline {
+    @apply w-auto min-w-[12rem] max-w-full;
+}
+
 .form-checkbox {
     @apply h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500;
 }
