@@ -15,8 +15,8 @@
     <div class="bg-white rounded-lg shadow p-6">
         <form method="GET" action="{{ route('activity-logs.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Module</label>
-                <select name="module" class="w-full border-gray-300 rounded-lg">
+                <label class="form-label">Module</label>
+                <select name="module" class="form-select">
                     <option value="">All Modules</option>
                     @foreach($modules as $module)
                     <option value="{{ $module }}" {{ request('module') === $module ? 'selected' : '' }}>
@@ -27,8 +27,8 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Action</label>
-                <select name="action" class="w-full border-gray-300 rounded-lg">
+                <label class="form-label">Action</label>
+                <select name="action" class="form-select">
                     <option value="">All Actions</option>
                     @foreach($actions as $action)
                     <option value="{{ $action }}" {{ request('action') === $action ? 'selected' : '' }}>
@@ -39,12 +39,12 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Date From</label>
-                <input type="date" name="date_from" value="{{ request('date_from') }}" class="w-full border-gray-300 rounded-lg">
+                <label class="form-label">Date From</label>
+                <input type="date" name="date_from" value="{{ request('date_from') }}" class="form-input">
             </div>
 
             <div class="flex items-end">
-                <button type="submit" class="w-full px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800">
+                <button type="submit" class="btn btn-primary btn-block">
                     Filter
                 </button>
             </div>

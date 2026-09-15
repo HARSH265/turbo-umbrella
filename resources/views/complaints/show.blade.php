@@ -13,8 +13,7 @@
                 <h1 class="text-xl font-bold text-gray-900 sm:text-3xl">{{ $complaint->ticket_number }}</h1>
                 <p class="mt-1 text-sm text-gray-600">Created {{ $complaint->created_at->format('d M Y, h:i A') }}</p>
             </div>
-            <a href="{{ route('complaints.index') }}"
-                class="inline-flex shrink-0 items-center whitespace-nowrap px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+            <a href="{{ route('complaints.index') }}" class="btn btn-secondary shrink-0">
                 ← Back to List
             </a>
         </div>
@@ -47,7 +46,7 @@
                         </div>
                         <!-- Status Badge using Enum Color Method -->
                         <span class="px-3 py-1 text-sm font-semibold rounded-full {{ $complaint->status->color() }}">
-                            {{ ucfirst($complaint->status->value) }}
+                            {{ ucfirst(str_replace('_', ' ', $complaint->status->value)) }}
                         </span>
                     </div>
 
@@ -152,17 +151,18 @@
                             {{-- No flex-wrap: the checkbox and the submit button stay on one
                                  row at every width. Tighter padding on phones keeps them
                                  side by side instead of stacking. --}}
+                            {{-- No flex-wrap: the checkbox and the submit button stay on one
+                                 row at every width. --}}
                             <div class="flex items-center justify-between gap-3">
                                 <div class="flex min-w-0 items-center">
                                     @if (!auth()->user()->isResident())
-                                        <label class="flex items-center rounded-full border border-brand-200 bg-brand-50 px-2.5 py-2 sm:px-3">
-                                            <input type="checkbox" name="is_internal" value="1"
-                                                class="rounded border-brand-300 text-amber-600 focus:ring-amber-500/20">
-                                            <span class="ml-2 whitespace-nowrap text-[11px] font-bold uppercase tracking-wide text-brand-600 sm:text-xs">Internal Note</span>
+                                        <label class="flex cursor-pointer items-center gap-2">
+                                            <input type="checkbox" name="is_internal" value="1" class="form-checkbox">
+                                            <span class="whitespace-nowrap text-sm text-gray-700">Internal note</span>
                                         </label>
                                     @endif
                                 </div>
-                                <x-primary-button class="shrink-0 whitespace-nowrap rounded-xl px-4 py-3 text-[11px] font-black sm:px-6">
+                                <x-primary-button class="shrink-0">
                                     Post Update
                                 </x-primary-button>
                             </div>
@@ -186,7 +186,7 @@
                             <dt class="text-xs font-medium text-gray-500 uppercase">Current Status</dt>
                             <dd class="mt-2">
                                 <span class="px-3 py-1 text-sm font-bold rounded-full {{ $complaint->status->color() }}">
-                                    {{ ucfirst($complaint->status->value) }}
+                                    {{ ucfirst(str_replace('_', ' ', $complaint->status->value)) }}
                                 </span>
                             </dd>
                         </div>
@@ -304,9 +304,9 @@
                     class="w-full border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 mb-4"></textarea>
                 <div class="flex space-x-3">
                     <button type="button" onclick="document.getElementById('resolveModal').classList.add('hidden')"
-                        class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold">Cancel</button>
+                        class="btn btn-secondary flex-1">Cancel</button>
                     <button type="submit"
-                        class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-bold transition">Complete</button>
+                        class="btn btn-primary flex-1">Complete</button>
                 </div>
             </form>
         </div>

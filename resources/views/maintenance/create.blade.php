@@ -20,7 +20,7 @@
                     <div class="md:col-span-2">
                         <label class="text-sm text-gray-600">Society</label>
                         <select name="society_id" required
-                                class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+                                class="form-select">
                             <option value="">Select Society</option>
                             @foreach($societies as $society)
                                 <option value="{{ $society->id }}" {{ old('society_id') == $society->id ? 'selected' : '' }}>
@@ -34,7 +34,7 @@
                 <div>
                     <label class="text-sm text-gray-600">Month</label>
                     <input type="month" name="month" value="{{ old('month') }}" required
-                           class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+                           class="form-input">
                 </div>
 
                 <div>
@@ -47,7 +47,7 @@
 
             <div class="mt-6">
                 <button type="submit"
-                        class="px-6 py-2 bg-brand-900 text-white rounded-md hover:bg-brand-800 text-sm">
+                        class="btn btn-primary">
                     Generate
                 </button>
             </div>

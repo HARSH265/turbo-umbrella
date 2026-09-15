@@ -121,7 +121,7 @@
         <div class="p-6">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-lg font-semibold text-gray-900">Recent Complaints</h2>
-                <a href="{{ route('complaints.create') }}" class="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800">
+                <a href="{{ route('complaints.create') }}" class="btn btn-primary">
                     New Complaint
                 </a>
             </div>

@@ -23,7 +23,7 @@
     <x-card>
         <form method="GET" action="{{ route('towers.index') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Society</label>
+                <label class="form-label">Society</label>
                 <select name="society_id" class="form-select">
                     <option value="">All Societies</option>
                     @foreach($societies as $society)
@@ -35,7 +35,7 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label class="form-label">Status</label>
                 <select name="is_active" class="form-select">
                     <option value="">All Status</option>
                     <option value="1" {{ request('is_active') === '1' ? 'selected' : '' }}>Active</option>

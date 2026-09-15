@@ -8,11 +8,11 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
         <a href="{{ route('users.index') }}"
-            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+            class="btn btn-secondary">
             ← Back to Users
         </a>
         @can('users.update')
-        <a href="{{ route('users.edit', $user) }}" class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
+        <a href="{{ route('users.edit', $user) }}" class="btn btn-primary">
             Edit User
         </a>
         @endcan
@@ -28,7 +28,7 @@
                 <h1 class="text-2xl font-bold text-gray-900">{{ $user->name }}</h1>
                 <p class="text-gray-600">{{ $user->email }}</p>
                 <div class="mt-2 flex items-center space-x-3">
-                    <span class="px-3 py-1 text-sm font-semibold rounded-full {{ $user->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                    <span class="badge {{ $user->is_active ? 'badge-success' : 'badge-danger' }}">
                         {{ $user->is_active ? 'Active' : 'Inactive' }}
                     </span>
                     <span class="px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-800">
@@ -91,7 +91,7 @@
                     <p class="text-xs text-gray-500 mt-1">
                         {{ ucfirst($flat->pivot->relation_type) }}
                         @if($flat->pivot->is_primary)
-                            <span class="ml-2 px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs">Primary</span>
+                            <span class="badge badge-success ml-2">Primary</span>
                         @endif
                     </p>
                 </div>
@@ -127,7 +127,7 @@
         <div class="flex items-center space-x-4">
             <form method="POST" action="{{ route('users.toggle-active', $user) }}" class="inline">
                 @csrf
-                <button type="submit" class="px-4 py-2 {{ $user->is_active ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700' }} text-white rounded-lg">
+                <button type="submit" class="btn {{ $user->is_active ? 'btn-danger' : 'btn-primary' }}">
                     {{ $user->is_active ? 'Deactivate User' : 'Activate User' }}
                 </button>
             </form>
@@ -139,7 +139,7 @@
                 @method('DELETE')
                 <button type="submit" 
                         onclick="return confirm('Are you sure you want to delete this user?')"
-                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                        class="btn btn-secondary">
                     Delete User
                 </button>
             </form>

@@ -6,7 +6,7 @@
 @section('content')
 <div class="max-w-3xl mx-auto">
     <div class="mb-6">
-        <a href="{{ route('visitors.index') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+        <a href="{{ route('visitors.index') }}" class="btn btn-secondary">
             <- Back to Visitors
         </a>
     </div>
@@ -62,7 +62,7 @@
             @if($canApproveAction)
             <form method="POST" action="{{ route('visitors.approve', $visitor) }}">
                 @csrf
-                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                <button type="submit" class="btn btn-primary">
                     Approve
                 </button>
             </form>
@@ -72,12 +72,12 @@
             <form method="POST" action="{{ route('visitors.reject', $visitor) }}">
                 @csrf
                 <div class="space-y-2">
-                    <label for="remarks" class="block text-sm font-medium text-gray-700">Rejection Reason</label>
-                    <textarea id="remarks" name="remarks" rows="3" class="w-full border-gray-300 rounded-lg" placeholder="Add a short reason for rejection">{{ old('remarks') }}</textarea>
+                    <label for="remarks" class="form-label">Rejection Reason</label>
+                    <textarea id="remarks" name="remarks" rows="3" class="form-textarea" placeholder="Add a short reason for rejection">{{ old('remarks') }}</textarea>
                     @error('remarks')
                         <p class="text-sm text-red-600">{{ $message }}</p>
                     @enderror
-                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                    <button type="submit" class="btn btn-danger">
                         Reject
                     </button>
                 </div>
@@ -90,7 +90,7 @@
         <div class="mt-6 pt-6 border-t">
             <form method="POST" action="{{ route('visitors.exit', $visitor) }}">
                 @csrf
-                <button type="submit" class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
+                <button type="submit" class="btn btn-primary">
                     Record Exit
                 </button>
             </form>

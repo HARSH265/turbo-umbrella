@@ -65,7 +65,7 @@
             <div>
                 <x-input-label value="Attachments (Optional)" />
                 <input type="file" name="files[]" multiple
-                       class="w-full text-xs file:bg-brand-900 file:text-white file:px-4 file:py-2 file:rounded-xl file:text-[10px] file:font-black">
+                       class="w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-600 file:px-4 file:py-2 file:text-xs file:font-medium file:text-white hover:file:bg-emerald-700">
             </div>
 
             <div class="flex justify-end gap-3 pt-4 border-t border-brand-50">

@@ -15,7 +15,7 @@
         </div>
 
         <a href="{{ route('maintenance.show', $maintenance) }}"
-           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+           class="btn btn-secondary">
             <- Back to Maintenance
         </a>
     </div>
@@ -81,7 +81,7 @@
                             name="amount"
                             value="{{ old('amount', number_format($recommendedAmount, 2, '.', '')) }}"
                             required
-                            class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+                            class="form-input">
                         <p class="mt-1 text-xs text-gray-500">
                             @if ($canPartiallyPay)
                                 Enter any amount up to the outstanding balance.
@@ -94,7 +94,7 @@
                     <div>
                         <label class="text-sm text-gray-600">Payment Mode</label>
                         <select name="payment_mode" required
-                                class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+                                class="form-select">
                             <option value="">Select</option>
                             <option value="cash" {{ old('payment_mode') === 'cash' ? 'selected' : '' }}>Cash</option>
                             <option value="cheque" {{ old('payment_mode') === 'cheque' ? 'selected' : '' }}>Cheque</option>
@@ -106,19 +106,19 @@
                     <div>
                         <label class="text-sm text-gray-600">Transaction ID</label>
                         <input type="text" name="transaction_id" value="{{ old('transaction_id') }}"
-                               class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+                               class="form-input">
                     </div>
 
                     <div>
                         <label class="text-sm text-gray-600">Remarks</label>
                         <input type="text" name="remarks" value="{{ old('remarks') }}"
-                               class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+                               class="form-input">
                     </div>
                 </div>
 
                 <div class="mt-6">
                     <button type="submit"
-                            class="px-6 py-2 bg-brand-900 text-white rounded-md hover:bg-brand-800 text-sm">
+                            class="btn btn-primary">
                         Record Payment
                     </button>
                 </div>

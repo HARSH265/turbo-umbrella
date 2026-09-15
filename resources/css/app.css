@@ -281,45 +281,120 @@
 }
 
 /* ============================================
-   Button Consistency
+   Buttons
+   --------------------------------------------
+   One button system. Three roles, two size modifiers, one block modifier.
+
+   Before this there were three competing styles: these .btn classes (emerald),
+   hand-written markup (black, 98 instances), and the Breeze Blade components
+   (gray-800 with indigo focus rings, uppercase). Two different colours were being
+   used for the same "primary action" role, which is what made the UI feel unrelated
+   screen to screen.
+
+   Role, not colour, picks the class:
+     .btn-primary    the one main action on a screen — save, create, submit
+     .btn-secondary  supporting actions — back, cancel, view, edit
+     .btn-danger     destructive actions — delete, deactivate
+     .btn-ghost      inline actions inside a table row or card
+
+   Modifiers: .btn-sm (compact), .btn-lg (prominent), .btn-block (full width).
+   Blade's x-primary-button / x-secondary-button / x-danger-button render these same
+   classes, so there is a single source of truth.
    ============================================ */
 
-/* whitespace-nowrap keeps labels like "Register Vehicle" on one line rather than
-   breaking mid-phrase when the button is squeezed. */
 .btn {
-    @apply inline-flex items-center justify-center whitespace-nowrap px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-150;
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-150;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2;
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
 }
 
 .btn-primary {
-    @apply bg-emerald-600 text-white hover:bg-emerald-700;
+    @apply bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800;
 }
 
 .btn-secondary {
-    @apply bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200;
-}
-
-.btn-outline {
-    @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50;
+    @apply border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100;
 }
 
 .btn-danger {
-    @apply bg-red-600 text-white hover:bg-red-700;
+    @apply bg-red-600 text-white hover:bg-red-700 active:bg-red-800;
+    @apply focus-visible:ring-red-500;
+}
+
+/* Text-only action, for use inside a table row or card where a filled button would
+   dominate the content it belongs to. */
+.btn-ghost {
+    @apply px-2 py-1 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800;
+}
+
+/* Kept as an alias so older markup keeps working; .btn-secondary is the outline. */
+.btn-outline {
+    @apply border border-gray-300 bg-white text-gray-700 hover:bg-gray-50;
 }
 
 .btn-sm {
-    @apply px-3 py-1.5 text-xs;
+    @apply gap-1.5 px-3 py-1.5 text-xs;
+}
+
+.btn-lg {
+    @apply px-6 py-3 text-base;
+}
+
+/* Full width — useful when a header stacks on a phone and the action should be a
+   comfortable tap target rather than a small box floating on the left. */
+.btn-block {
+    @apply w-full;
 }
 
 /* ============================================
-   Form Input Consistency
+   Forms
+   --------------------------------------------
+   Labels were written three different ways across the views (mb-2, mb-1, and a bare
+   text-sm) and 71 fields carried hand-written border/rounded classes instead of
+   .form-input. Use .form-group > .form-label + .form-input/.form-select/.form-textarea.
    ============================================ */
 
-.form-input {
-    @apply w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors;
+.form-group {
+    @apply space-y-1.5;
+}
+
+.form-label {
+    @apply mb-1.5 block text-sm font-medium text-gray-700;
+}
+
+.form-label-optional {
+    @apply ml-1 text-xs font-normal text-gray-400;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+    @apply w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 transition-colors;
+    @apply placeholder:text-gray-400;
+    @apply focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500;
+    @apply disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500;
 }
 
 .form-select {
-    @apply w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white;
+    @apply bg-white pr-9;
+}
+
+.form-textarea {
+    @apply min-h-[6rem] resize-y;
+}
+
+.form-checkbox {
+    @apply h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500;
+}
+
+/* Hint under a field. */
+.form-help {
+    @apply text-xs text-gray-500;
+}
+
+/* Validation message under a field. */
+.form-error {
+    @apply text-xs font-medium text-red-600;
 }
 
 /* ============================================

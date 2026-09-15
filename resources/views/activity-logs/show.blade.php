@@ -11,7 +11,7 @@
             <p class="mt-1 text-sm text-gray-600">Change history for this record</p>
         </div>
         <a href="{{ route('activity-logs.index') }}"
-            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+            class="btn btn-secondary">
             Back to Logs
         </a>
     </div>
@@ -21,7 +21,7 @@
             <div class="bg-white rounded-lg shadow p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <span class="px-2 py-1 text-xs font-semibold rounded-full {{ $log->action === 'create' ? 'bg-green-100 text-green-800' : ($log->action === 'update' ? 'bg-blue-100 text-blue-800' : ($log->action === 'delete' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800')) }}">
+                        <span class="badge {{ $log->action === 'create' ? 'badge-success' : ($log->action === 'update' ? 'badge-info' : ($log->action === 'delete' ? 'badge-danger' : 'badge-gray')) }}">
                             {{ ucfirst($log->action) }}
                         </span>
                         <span class="ml-3 text-sm text-gray-600">{{ $log->user?->name ?? 'System' }}</span>

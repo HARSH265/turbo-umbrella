@@ -23,7 +23,7 @@
     <x-card>
         <form method="GET" action="{{ route('visitors.index') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label class="form-label">Status</label>
                 <select name="approval_status" class="form-select">
                     <option value="">All Status</option>
                     <option value="pending" {{ request('approval_status') === 'pending' ? 'selected' : '' }}>Pending</option>
@@ -32,7 +32,7 @@
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <label class="form-label">Date</label>
                 {{-- Not pre-filled with today: the controller already defaults to today's
                      entries, and pre-filling made the field impossible to clear. --}}
                 <input type="date" name="date" value="{{ request('date') }}"
@@ -47,7 +47,7 @@
                 </label>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Inside</label>
+                <label class="form-label">Inside</label>
                 <select name="inside" class="form-select">
                     <option value="">All</option>
                     <option value="1" {{ request('inside') === '1' ? 'selected' : '' }}>Currently Inside</option>

@@ -22,7 +22,7 @@
                         <span class="font-medium">{{ $resident->name }}</span>
                         <span class="text-sm text-gray-600">({{ ucfirst($resident->pivot->relation_type) }})</span>
                         @if($resident->pivot->is_primary)
-                        <span class="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded">Primary</span>
+                        <span class="badge badge-success ml-2">Primary</span>
                         @endif
                     </div>
                     <form method="POST" action="{{ route('flats.remove-resident', [$flat, $resident]) }}" class="inline">
@@ -45,7 +45,7 @@
 
             <!-- Select User -->
             <div class="mb-6">
-                <label for="user_id" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="user_id" class="form-label">
                     Select User <span class="text-red-500">*</span>
                 </label>
                 <select name="user_id" id="user_id" required
@@ -67,7 +67,7 @@
 
             <!-- Relation Type -->
             <div class="mb-6">
-                <label for="relation_type" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="relation_type" class="form-label">
                     Relation Type <span class="text-red-500">*</span>
                 </label>
                 <select name="relation_type" id="relation_type" required
@@ -84,7 +84,7 @@
 
             <!-- Start Date -->
             <div class="mb-6">
-                <label for="start_date" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="start_date" class="form-label">
                     Start Date <span class="text-red-500">*</span>
                 </label>
                 <input type="date" name="start_date" id="start_date" value="{{ old('start_date', now()->format('Y-m-d')) }}" required
@@ -96,7 +96,7 @@
 
             <!-- End Date (for tenants) -->
             <div class="mb-6">
-                <label for="end_date" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="end_date" class="form-label">
                     End Date (Optional - For Tenants)
                 </label>
                 <input type="date" name="end_date" id="end_date" value="{{ old('end_date') }}"
@@ -118,10 +118,10 @@
 
             <!-- Actions -->
             <div class="flex items-center justify-end space-x-4">
-                <a href="{{ route('flats.show', $flat) }}" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                <a href="{{ route('flats.show', $flat) }}" class="btn btn-secondary">
                     Cancel
                 </a>
-                <button type="submit" class="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
+                <button type="submit" class="btn btn-primary">
                     Assign Resident
                 </button>
             </div>

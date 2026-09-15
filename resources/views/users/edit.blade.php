@@ -14,23 +14,23 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Full Name <span class="text-red-500">*</span></label>
-                    <input type="text" name="name" value="{{ old('name', $user->name) }}" required class="w-full border-gray-300 rounded-lg">
+                    <label class="form-label">Full Name <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" value="{{ old('name', $user->name) }}" required class="form-input">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Email <span class="text-red-500">*</span></label>
-                    <input type="email" name="email" value="{{ old('email', $user->email) }}" required class="w-full border-gray-300 rounded-lg">
+                    <label class="form-label">Email <span class="text-red-500">*</span></label>
+                    <input type="email" name="email" value="{{ old('email', $user->email) }}" required class="form-input">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Phone <span class="text-red-500">*</span></label>
-                    <input type="text" name="phone" value="{{ old('phone', $user->phone) }}" required class="w-full border-gray-300 rounded-lg">
+                    <label class="form-label">Phone <span class="text-red-500">*</span></label>
+                    <input type="text" name="phone" value="{{ old('phone', $user->phone) }}" required class="form-input">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Role <span class="text-red-500">*</span></label>
-                    <select name="role_id" required class="w-full border-gray-300 rounded-lg">
+                    <label class="form-label">Role <span class="text-red-500">*</span></label>
+                    <select name="role_id" required class="form-select">
                         @foreach($roles as $role)
                             <option value="{{ $role->id }}" {{ old('role_id', optional($user->roles->first())->id) == $role->id ? 'selected' : '' }}>
                                 {{ $role->name }}
@@ -40,8 +40,8 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Society</label>
-                    <select name="society_id" class="w-full border-gray-300 rounded-lg" @if(auth()->user()->isSocietyAdmin()) disabled @endif>
+                    <label class="form-label">Society</label>
+                    <select name="society_id" class="form-select" @if(auth()->user()->isSocietyAdmin()) disabled @endif>
                         <option value="">No society</option>
                         @foreach($societies as $society)
                             <option value="{{ $society->id }}" {{ old('society_id', auth()->user()->isSocietyAdmin() ? auth()->user()->society_id : $user->society_id) == $society->id ? 'selected' : '' }}>
@@ -60,26 +60,26 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-                    <input type="password" name="password" class="w-full border-gray-300 rounded-lg">
+                    <label class="form-label">New Password</label>
+                    <input type="password" name="password" class="form-input">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
-                    <input type="password" name="password_confirmation" class="w-full border-gray-300 rounded-lg">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" name="password_confirmation" class="form-input">
                 </div>
             </div>
 
             <div class="mt-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Profile Photo</label>
-                <input type="file" name="profile_photo" class="w-full border-gray-300 rounded-lg">
+                <label class="form-label">Profile Photo</label>
+                <input type="file" name="profile_photo" class="form-input">
             </div>
 
             <div class="mt-6 flex justify-end space-x-3">
-                <a href="{{ route('users.show', $user) }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                <a href="{{ route('users.show', $user) }}" class="btn btn-secondary">
                     Cancel
                 </a>
-                <button type="submit" class="px-5 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
+                <button type="submit" class="btn btn-primary">
                     Update User
                 </button>
             </div>

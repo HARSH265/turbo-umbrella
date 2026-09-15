@@ -23,7 +23,7 @@
     <x-card>
         <form method="GET" action="{{ route('flats.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Tower</label>
+                <label class="form-label">Tower</label>
                 <select name="tower_id" class="form-select">
                     <option value="">All Towers</option>
                     @foreach($towers as $tower)
@@ -35,7 +35,7 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                <label class="form-label">Type</label>
                 <select name="type" class="form-select">
                     <option value="">All Types</option>
                     <option value="1BHK" {{ request('type') === '1BHK' ? 'selected' : '' }}>1BHK</option>
@@ -47,7 +47,7 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Occupancy</label>
+                <label class="form-label">Occupancy</label>
                 <select name="occupancy_status" class="form-select">
                     <option value="">All</option>
                     <option value="occupied" {{ request('occupancy_status') === 'occupied' ? 'selected' : '' }}>Occupied</option>

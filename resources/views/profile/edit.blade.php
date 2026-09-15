@@ -16,7 +16,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Name -->
                 <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                    <label for="name" class="form-label">Full Name</label>
                     <input type="text" name="name" id="name" value="{{ old('name', $user->name) }}" required
                            class="w-full border-gray-300 rounded-lg @error('name') border-red-500 @enderror">
                     @error('name')
@@ -26,7 +26,7 @@
 
                 <!-- Email (readonly) -->
                 <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <label for="email" class="form-label">Email</label>
                     <input type="email" id="email" value="{{ $user->email }}" disabled
                            class="w-full border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed">
                     <p class="mt-1 text-xs text-gray-500">Email cannot be changed</p>
@@ -34,7 +34,7 @@
 
                 <!-- Phone -->
                 <div>
-                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                    <label for="phone" class="form-label">Phone Number</label>
                     <input type="text" name="phone" id="phone" value="{{ old('phone', $user->phone) }}" required
                            class="w-full border-gray-300 rounded-lg @error('phone') border-red-500 @enderror">
                     @error('phone')
@@ -44,7 +44,7 @@
 
                 <!-- Role (readonly) -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                    <label class="form-label">Role</label>
                     <input type="text" value="{{ $user->roles->pluck('name')->implode(', ') }}" disabled
                            class="w-full border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed">
                 </div>
@@ -53,7 +53,7 @@
             <!-- Flats (for residents) -->
             @if($user->isResident() && $user->activeFlats->isNotEmpty())
             <div class="mt-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">My Flats</label>
+                <label class="form-label">My Flats</label>
                 <div class="space-y-2">
                     @foreach($user->activeFlats as $flat)
                     <div class="border rounded-lg p-3 bg-gray-50">
@@ -67,7 +67,7 @@
             @endif
 
             <div class="mt-6 flex justify-end">
-                <button type="submit" class="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
+                <button type="submit" class="btn btn-primary">
                     Save Changes
                 </button>
             </div>
@@ -88,7 +88,7 @@
             <div class="space-y-4">
                 <!-- Current Password -->
                 <div>
-                    <label for="current_password" class="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                    <label for="current_password" class="form-label">Current Password</label>
                     <input type="password" name="current_password" id="current_password"
                            class="w-full border-gray-300 rounded-lg @error('current_password') border-red-500 @enderror">
                     @error('current_password')
@@ -98,7 +98,7 @@
 
                 <!-- New Password -->
                 <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                    <label for="password" class="form-label">New Password</label>
                     <input type="password" name="password" id="password"
                            class="w-full border-gray-300 rounded-lg @error('password') border-red-500 @enderror">
                     @error('password')
@@ -108,14 +108,14 @@
 
                 <!-- Confirm Password -->
                 <div>
-                    <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                    <label for="password_confirmation" class="form-label">Confirm New Password</label>
                     <input type="password" name="password_confirmation" id="password_confirmation"
-                           class="w-full border-gray-300 rounded-lg">
+                           class="form-input">
                 </div>
             </div>
 
             <div class="mt-6 flex justify-end">
-                <button type="submit" class="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
+                <button type="submit" class="btn btn-primary">
                     Update Password
                 </button>
             </div>

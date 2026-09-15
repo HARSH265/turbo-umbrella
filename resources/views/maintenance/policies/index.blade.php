@@ -12,20 +12,20 @@
             @if(auth()->user()->isSuperAdmin())
                 <form method="POST" action="{{ route('maintenance.policies.generate') }}" class="flex flex-wrap items-center gap-2">
                     @csrf
-                    <select name="society_id" required class="rounded-md border-gray-300 text-sm">
+                    <select name="society_id" required class="form-select">
                         <option value="">Select Society</option>
                         @foreach($societies as $society)
                             <option value="{{ $society->id }}">{{ $society->name }}</option>
                         @endforeach
                     </select>
-                    <button class="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50">
+                    <button class="btn btn-secondary">
                         Generate Current Month
                     </button>
                 </form>
             @elseif(auth()->user()->hasPermission('maintenance.create') || auth()->user()->isSocietyAdmin())
                 <form method="POST" action="{{ route('maintenance.policies.generate') }}">
                     @csrf
-                    <button class="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50">
+                    <button class="btn btn-secondary">
                         Generate Current Month
                     </button>
                 </form>
@@ -33,7 +33,7 @@
 
             @if(auth()->user()->hasPermission('maintenance.create') || auth()->user()->hasPermission('maintenance.policy.create') || auth()->user()->isSuperAdmin() || auth()->user()->isSocietyAdmin())
                 <a href="{{ route('maintenance.policies.create') }}"
-                   class="px-4 py-2 bg-brand-900 text-white rounded-md hover:bg-brand-800 text-sm">
+                   class="btn btn-primary">
                     Create Policy
                 </a>
             @endif

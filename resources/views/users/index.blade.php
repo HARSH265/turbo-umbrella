@@ -23,7 +23,7 @@
     <x-card>
         <form method="GET" action="{{ route('users.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <label class="form-label">Role</label>
                 <select name="role" class="form-select">
                     <option value="">All Roles</option>
                     @foreach($roles as $role)
@@ -34,7 +34,7 @@
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label class="form-label">Status</label>
                 <select name="is_active" class="form-select">
                     <option value="">All Status</option>
                     <option value="1" {{ request('is_active') === '1' ? 'selected' : '' }}>Active</option>
@@ -42,7 +42,7 @@
                 </select>
             </div>
             <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <label class="form-label">Search</label>
                 <x-text-input name="search" value="{{ request('search') }}" placeholder="Name, email, or phone" class="w-full" />
             </div>
             <div class="md:col-span-4 flex justify-end">

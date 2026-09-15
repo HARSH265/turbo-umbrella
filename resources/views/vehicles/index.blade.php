@@ -23,7 +23,7 @@
     <x-card>
         <form method="GET" action="{{ route('vehicles.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Flat</label>
+                <label class="form-label">Flat</label>
                 <select name="flat_id" class="form-select">
                     <option value="">All Flats</option>
                     @foreach($flats as $flat)
@@ -35,7 +35,7 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Vehicle Type</label>
+                <label class="form-label">Vehicle Type</label>
                 <select name="vehicle_type" class="form-select">
                     <option value="">All Types</option>
                     <option value="car" {{ request('vehicle_type') === 'car' ? 'selected' : '' }}>Car</option>
@@ -47,7 +47,7 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <label class="form-label">Search</label>
                 <input type="text" name="search" value="{{ request('search') }}" 
                        placeholder="Registration number"
                        class="form-input">

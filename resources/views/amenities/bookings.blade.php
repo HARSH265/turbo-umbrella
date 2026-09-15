@@ -16,7 +16,7 @@
     <x-card>
         <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label class="form-label">Status</label>
                 <select name="status" class="form-select">
                     <option value="">All Status</option>
                     <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
@@ -26,11 +26,11 @@
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                <label class="form-label">From Date</label>
                 <input type="date" name="date_from" value="{{ request('date_from') }}" class="form-input">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                <label class="form-label">To Date</label>
                 <input type="date" name="date_to" value="{{ request('date_to') }}" class="form-input">
             </div>
             <div class="flex items-end">

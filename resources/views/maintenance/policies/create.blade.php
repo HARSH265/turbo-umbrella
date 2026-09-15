@@ -16,7 +16,7 @@
                 @if(auth()->user()->isSuperAdmin())
                     <div class="md:col-span-2">
                         <label class="text-sm">Society</label>
-                        <select name="society_id" required class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+                        <select name="society_id" required class="form-select">
                             <option value="">Select Society</option>
                             @foreach($societies as $society)
                                 <option value="{{ $society->id }}" {{ old('society_id') == $society->id ? 'selected' : '' }}>
@@ -30,7 +30,7 @@
                 <div>
                     <label class="text-sm">Policy Name</label>
                     <input type="text" name="name" value="{{ old('name') }}" required
-                           class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+                           class="form-input">
                 </div>
 
                 {{-- Wording that appears on the policy document residents read. All
@@ -39,34 +39,34 @@
                     <label class="text-sm">Purpose <span class="text-gray-400">(optional)</span></label>
                     <textarea name="description" rows="3" maxlength="2000"
                               placeholder="Why this charge exists and who it applies to."
-                              class="mt-1 block w-full rounded-md border-gray-300 text-sm">{{ old('description') }}</textarea>
+                              class="form-textarea">{{ old('description') }}</textarea>
                 </div>
 
                 <div>
                     <label class="text-sm">What the charge covers <span class="text-gray-400">(optional)</span></label>
                     <textarea name="inclusions" rows="3" maxlength="2000"
                               placeholder="e.g. common-area lighting, lift maintenance, security, housekeeping, water."
-                              class="mt-1 block w-full rounded-md border-gray-300 text-sm">{{ old('inclusions') }}</textarea>
+                              class="form-textarea">{{ old('inclusions') }}</textarea>
                 </div>
 
                 <div>
                     <label class="text-sm">Payment terms <span class="text-gray-400">(optional)</span></label>
                     <textarea name="payment_terms" rows="3" maxlength="2000"
                               placeholder="Accepted payment methods, bank details, who to contact about a bill."
-                              class="mt-1 block w-full rounded-md border-gray-300 text-sm">{{ old('payment_terms') }}</textarea>
+                              class="form-textarea">{{ old('payment_terms') }}</textarea>
                 </div>
 
                 <div>
                     <label class="text-sm">Additional notes <span class="text-gray-400">(optional)</span></label>
                     <textarea name="notes" rows="2" maxlength="2000"
                               placeholder="Anything else the committee wants on record."
-                              class="mt-1 block w-full rounded-md border-gray-300 text-sm">{{ old('notes') }}</textarea>
+                              class="form-textarea">{{ old('notes') }}</textarea>
                 </div>
 
                 <div>
                     <label class="text-sm">Billing Cycle</label>
                     <select name="billing_cycle" required
-                            class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+                            class="form-select">
                         <option value="monthly" {{ old('billing_cycle') === 'monthly' ? 'selected' : '' }}>Monthly</option>
                         <option value="quarterly" {{ old('billing_cycle') === 'quarterly' ? 'selected' : '' }}>Quarterly</option>
                         <option value="half_yearly" {{ old('billing_cycle') === 'half_yearly' ? 'selected' : '' }}>Half Yearly</option>
@@ -77,7 +77,7 @@
                 <div>
                     <label class="text-sm">Calculation Type</label>
                     <select name="calculation_type" required
-                            class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+                            class="form-select">
                         <option value="fixed" {{ old('calculation_type') === 'fixed' ? 'selected' : '' }}>Fixed</option>
                         <option value="flat_type" {{ old('calculation_type') === 'flat_type' ? 'selected' : '' }}>Flat Type</option>
                         <option value="area_based" {{ old('calculation_type') === 'area_based' ? 'selected' : '' }}>Area Based</option>
@@ -87,13 +87,13 @@
                 <div>
                     <label class="text-sm">Base Amount</label>
                     <input type="number" step="0.01" name="base_amount" value="{{ old('base_amount') }}"
-                           class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+                           class="form-input">
                 </div>
 
                 <div>
                     <label class="text-sm">Late Fee Type</label>
                     <select name="late_fee_type"
-                            class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+                            class="form-select">
                         <option value="">None</option>
                         <option value="fixed" {{ old('late_fee_type') === 'fixed' ? 'selected' : '' }}>Fixed</option>
                         <option value="percentage" {{ old('late_fee_type') === 'percentage' ? 'selected' : '' }}>Percentage</option>
@@ -103,13 +103,13 @@
                 <div>
                     <label class="text-sm">Late Fee Value</label>
                     <input type="number" step="0.01" name="late_fee_value" value="{{ old('late_fee_value') }}"
-                           class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+                           class="form-input">
                 </div>
 
                 <div>
                     <label class="text-sm">Grace Days</label>
                     <input type="number" name="grace_days" value="{{ old('grace_days', 0) }}" required
-                           class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+                           class="form-input">
                 </div>
 
                 <div class="flex items-center mt-6">
@@ -123,7 +123,7 @@
                 <div>
                     <label class="text-sm">Effective From</label>
                     <input type="date" name="effective_from" value="{{ old('effective_from') }}" required
-                           class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+                           class="form-input">
                 </div>
 
                 <div class="md:col-span-2 border-t pt-6">
@@ -136,14 +136,14 @@
                         <label class="text-sm">{{ $flatType }} Amount</label>
                         <input type="number" step="0.01" name="type_amounts[{{ $flatType }}]"
                                value="{{ old('type_amounts.' . $flatType) }}"
-                               class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+                               class="form-input">
                     </div>
                 @endforeach
             </div>
 
             <div class="mt-6">
                 <button type="submit"
-                        class="px-6 py-2 bg-brand-900 text-white rounded-md hover:bg-brand-800 text-sm">
+                        class="btn btn-primary">
                     Create & Activate
                 </button>
             </div>

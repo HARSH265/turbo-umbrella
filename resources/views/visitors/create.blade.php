@@ -15,8 +15,8 @@
             @csrf
 
             <div class="mb-6">
-                <label for="flat_id" class="block text-sm font-medium text-gray-700 mb-2">Select Flat</label>
-                <select name="flat_id" id="flat_id" required class="w-full border-gray-300 rounded-lg">
+                <label for="flat_id" class="form-label">Select Flat</label>
+                <select name="flat_id" id="flat_id" required class="form-select">
                     <option value="">Choose flat</option>
                     @foreach($flats as $flat)
                         <option value="{{ $flat->id }}" {{ old('flat_id') == $flat->id ? 'selected' : '' }}>
@@ -31,16 +31,16 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Visitor Name</label>
-                    <input type="text" name="name" value="{{ old('name') }}" required class="w-full border-gray-300 rounded-lg">
+                    <label class="form-label">Visitor Name</label>
+                    <input type="text" name="name" value="{{ old('name') }}" required class="form-input">
                     @error('name')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                    <input type="text" name="phone" value="{{ old('phone') }}" required class="w-full border-gray-300 rounded-lg">
+                    <label class="form-label">Phone</label>
+                    <input type="text" name="phone" value="{{ old('phone') }}" required class="form-input">
                     @error('phone')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -48,31 +48,31 @@
             </div>
 
             <div class="mt-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Purpose</label>
-                <input type="text" name="purpose" value="{{ old('purpose') }}" required class="w-full border-gray-300 rounded-lg">
+                <label class="form-label">Purpose</label>
+                <input type="text" name="purpose" value="{{ old('purpose') }}" required class="form-input">
                 @error('purpose')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
 
             <div class="mt-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Entry Time</label>
-                <input type="datetime-local" name="entry_time" value="{{ old('entry_time', now()->format('Y-m-d\TH:i')) }}" required class="w-full border-gray-300 rounded-lg">
+                <label class="form-label">Entry Time</label>
+                <input type="datetime-local" name="entry_time" value="{{ old('entry_time', now()->format('Y-m-d\TH:i')) }}" required class="form-input">
                 @error('entry_time')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
 
             <div class="mt-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Remarks</label>
-                <textarea name="remarks" rows="3" class="w-full border-gray-300 rounded-lg">{{ old('remarks') }}</textarea>
+                <label class="form-label">Remarks</label>
+                <textarea name="remarks" rows="3" class="form-textarea">{{ old('remarks') }}</textarea>
             </div>
 
             <div class="mt-6 flex justify-end space-x-3">
-                <a href="{{ route('visitors.index') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                <a href="{{ route('visitors.index') }}" class="btn btn-secondary">
                     Cancel
                 </a>
-                <button type="submit" class="px-5 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
+                <button type="submit" class="btn btn-primary">
                     Register Visitor
                 </button>
             </div>

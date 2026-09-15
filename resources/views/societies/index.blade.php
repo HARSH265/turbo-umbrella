@@ -23,14 +23,14 @@
     <x-card>
         <form method="GET" action="{{ route('societies.index') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <label class="form-label">Search</label>
                 <input type="text" name="search" value="{{ request('search') }}"
                        placeholder="Name, code, or city"
                        class="form-input">
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label class="form-label">Status</label>
                 <select name="is_active" class="form-select">
                     <option value="">All Status</option>
                     <option value="1" {{ request('is_active') === '1' ? 'selected' : '' }}>Active</option>

@@ -12,8 +12,8 @@
             @csrf
 
             <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Tower <span class="text-red-500">*</span></label>
-                <select name="tower_id" required class="w-full border-gray-300 rounded-lg">
+                <label class="form-label">Tower <span class="text-red-500">*</span></label>
+                <select name="tower_id" required class="form-select">
                     <option value="">Select tower</option>
                     @foreach($towers as $tower)
                         <option value="{{ $tower->id }}" {{ old('tower_id') == $tower->id ? 'selected' : '' }}>
@@ -28,24 +28,24 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Flat Number <span class="text-red-500">*</span></label>
-                    <input type="text" name="flat_number" value="{{ old('flat_number') }}" required class="w-full border-gray-300 rounded-lg" placeholder="e.g., 101">
+                    <label class="form-label">Flat Number <span class="text-red-500">*</span></label>
+                    <input type="text" name="flat_number" value="{{ old('flat_number') }}" required class="form-input" placeholder="e.g., 101">
                     @error('flat_number')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Floor Number <span class="text-red-500">*</span></label>
-                    <input type="number" name="floor_number" value="{{ old('floor_number') }}" required min="0" class="w-full border-gray-300 rounded-lg">
+                    <label class="form-label">Floor Number <span class="text-red-500">*</span></label>
+                    <input type="number" name="floor_number" value="{{ old('floor_number') }}" required min="0" class="form-input">
                     @error('floor_number')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Type <span class="text-red-500">*</span></label>
-                    <select name="type" required class="w-full border-gray-300 rounded-lg">
+                    <label class="form-label">Type <span class="text-red-500">*</span></label>
+                    <select name="type" required class="form-select">
                         <option value="">Select type</option>
                         <option value="1BHK" {{ old('type') === '1BHK' ? 'selected' : '' }}>1BHK</option>
                         <option value="2BHK" {{ old('type') === '2BHK' ? 'selected' : '' }}>2BHK</option>
@@ -59,16 +59,16 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Carpet Area (sq.ft)</label>
-                    <input type="number" name="carpet_area" value="{{ old('carpet_area') }}" step="0.01" class="w-full border-gray-300 rounded-lg">
+                    <label class="form-label">Carpet Area (sq.ft)</label>
+                    <input type="number" name="carpet_area" value="{{ old('carpet_area') }}" step="0.01" class="form-input">
                     @error('carpet_area')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Occupancy Status <span class="text-red-500">*</span></label>
-                    <select name="occupancy_status" required class="w-full border-gray-300 rounded-lg">
+                    <label class="form-label">Occupancy Status <span class="text-red-500">*</span></label>
+                    <select name="occupancy_status" required class="form-select">
                         <option value="vacant" {{ old('occupancy_status') === 'vacant' ? 'selected' : '' }}>Vacant</option>
                         <option value="occupied" {{ old('occupancy_status') === 'occupied' ? 'selected' : '' }}>Occupied</option>
                     </select>
@@ -79,10 +79,10 @@
             </div>
 
             <div class="mt-6 flex justify-end space-x-3">
-                <a href="{{ route('flats.index') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                <a href="{{ route('flats.index') }}" class="btn btn-secondary">
                     Cancel
                 </a>
-                <button type="submit" class="px-5 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
+                <button type="submit" class="btn btn-primary">
                     Create Flat
                 </button>
             </div>

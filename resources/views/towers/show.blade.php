@@ -8,11 +8,11 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
         <a href="{{ route('towers.index') }}"
-            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+            class="btn btn-secondary">
             ← Back to Towers
         </a>
         @can('societies.update')
-        <a href="{{ route('towers.edit', $tower) }}" class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
+        <a href="{{ route('towers.edit', $tower) }}" class="btn btn-primary">
             Edit Tower
         </a>
         @endcan
@@ -25,7 +25,7 @@
                 <h1 class="text-3xl font-bold text-gray-900">{{ $tower->name }}</h1>
                 <p class="mt-1 text-gray-600">{{ $tower->society->name }}</p>
             </div>
-            <span class="px-3 py-1 text-sm font-semibold rounded-full {{ $tower->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+            <span class="badge {{ $tower->is_active ? 'badge-success' : 'badge-danger' }}">
                 {{ $tower->is_active ? 'Active' : 'Inactive' }}
             </span>
         </div>
