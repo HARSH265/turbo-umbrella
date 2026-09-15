@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Enums\NotificationType;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
 /**
@@ -25,7 +26,15 @@ use Illuminate\Notifications\Notification;
  *   "color"      : "blue"
  * }
  */
-class GeneralNotification extends Notification
+/**
+ * ShouldQueue keeps delivery off the request. A society-wide notice fans out to one
+ * insert per resident; done inline that is the request's latency. Requires a worker —
+ * `php artisan queue:work` — which `composer run dev` already starts.
+ *
+ * The test suite pins QUEUE_CONNECTION=sync in phpunit.xml, so tests still assert
+ * against notifications delivered inline.
+ */
+class GeneralNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 

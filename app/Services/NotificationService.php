@@ -274,9 +274,10 @@ class NotificationService
      * society-wide notice held the whole recipient set in memory at once. chunkById()
      * keeps memory flat regardless of society size.
      *
-     * Delivery is still sequential within a chunk. With QUEUE_CONNECTION=sync that
-     * means the request performs one insert per recipient; switch the queue to
-     * 'database' and run `php artisan queue:work` to move it off the request.
+     * GeneralNotification implements ShouldQueue and QUEUE_CONNECTION is 'database', so
+     * each recipient's delivery is pushed onto the queue rather than performed inline.
+     * A worker must be running — `php artisan queue:work`, which `composer run dev`
+     * starts — or the jobs sit in the jobs table undelivered.
      *
      * @param  \Illuminate\Database\Eloquent\Builder $query
      */

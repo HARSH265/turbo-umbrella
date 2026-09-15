@@ -213,3 +213,23 @@ Add `.form-inline` for a control that lives in a toolbar:
     <a href="..." class="btn btn-primary">Create Policy</a>
 </div>
 ```
+
+---
+
+## Background delivery
+
+Notifications are **queued**, not inline. `GeneralNotification` implements `ShouldQueue`
+and `QUEUE_CONNECTION=database`, so a society-wide notice pushes one job per recipient
+onto the `jobs` table instead of performing the inserts during the request.
+
+**A worker has to be running** or nothing is delivered:
+
+```bash
+php artisan queue:work
+```
+
+`composer run dev` starts one alongside the dev server. If a notification never arrives,
+check the `failed_jobs` table before suspecting the notification code.
+
+The test suite pins `QUEUE_CONNECTION=sync` in `phpunit.xml`, so tests still assert
+against notifications delivered inline and need no worker.

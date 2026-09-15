@@ -600,7 +600,16 @@ The following major work has been completed in this codebase:
 ## Known Operational Notes
 
 - if complaint disputed status enum is newly added on an existing MySQL database, migrations must be run
-- queue/listener setup should remain active if notification delivery is queued
+- **a queue worker must be running.** `GeneralNotification` implements `ShouldQueue` and
+  `QUEUE_CONNECTION=database`, so notifications are pushed onto the `jobs` table rather
+  than delivered inline. Without a worker they queue up and never arrive:
+
+  ```bash
+  php artisan queue:work
+  ```
+
+  `composer run dev` already starts one alongside the dev server. In production run it
+  under a supervisor. Check `failed_jobs` if a notification never lands.
 - notification feature depends on `notifications` table and `Notifiable` user model integration
 
 ## Directory Guide

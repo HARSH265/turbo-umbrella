@@ -39,8 +39,19 @@ class GenerateMaintenanceCommand extends Command
     {
         if ($societyId) {
             $this->info("Generating maintenance for society {$societyId}, month {$month->format('Y-m')}...");
-            $count = $this->generationService->generateForSociety($societyId, $month);
+
+            try {
+                $count = $this->generationService->generateForSociety($societyId, $month);
+            } catch (\DomainException $e) {
+                // A precondition the operator can fix, so report it rather than dumping
+                // a stack trace. Matches how the all-societies branch below behaves.
+                $this->error($e->getMessage());
+
+                return Command::FAILURE;
+            }
+
             $this->info("Generated {$count} maintenance bills.");
+
             return Command::SUCCESS;
         }
 

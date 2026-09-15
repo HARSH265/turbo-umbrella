@@ -241,11 +241,17 @@ class MaintenancePolicyController extends Controller
             $societyId = $user->society_id;
         }
 
-        $this->generationService->generateForSociety(
-            societyId: (int) $societyId,
-            month: $month,
-            generatedBy: $user->id
-        );
+        try {
+            $this->generationService->generateForSociety(
+                societyId: (int) $societyId,
+                month: $month,
+                generatedBy: $user->id
+            );
+        } catch (\DomainException $e) {
+            // Preconditions an admin can actually act on — no active policy, wrong month
+            // for the billing cycle. These used to escape as a 500 page.
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
 
         return back()->with('success', 'Maintenance generated successfully.');
     }

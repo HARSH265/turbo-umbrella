@@ -35,23 +35,23 @@ class MaintenanceGenerationService
             $policy = MaintenancePolicy::getActiveForSociety($societyId);
 
             if (!$policy) {
-                throw new \Exception("No active maintenance policy found for this society.");
+                throw new \DomainException("No active maintenance policy found for this society.");
             }
 
             $template = $policy->template;
 
             if (!$template) {
-                throw new \Exception("Policy template missing.");
+                throw new \DomainException("Policy template missing.");
             }
 
             // ✅ Check if policy is effective for the given month
             if ($policy->effective_from && $month->lt($policy->effective_from->copy()->startOfMonth())) {
-                throw new \Exception("Policy not effective for selected month.");
+                throw new \DomainException("Policy not effective for selected month.");
             }
 
             // ✅ Check billing cycle eligibility
             if (!$this->isEligibleForBillingCycle($month, $template->billing_cycle)) {
-                throw new \Exception("Month {$month->format('F Y')} is not eligible for {$template->billing_cycle->value} billing cycle.");
+                throw new \DomainException("Month {$month->format('F Y')} is not eligible for {$template->billing_cycle->value} billing cycle.");
             }
 
             $flats = Flat::whereHas('tower', function ($q) use ($societyId) {
